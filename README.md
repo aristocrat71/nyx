@@ -14,7 +14,7 @@ make icon     # regenerate assets/AppIcon.icns from scripts/render-icon.swift
 make clean    # remove build artifacts
 ```
 
-The bundle is ad-hoc signed, so macOS may re-ask for Screen Recording permission after a rebuild.
+Run `./scripts/make-dev-cert.sh` once to create a self-signed "Nyx Dev" signing identity; `make app` picks it up automatically and the Screen Recording grant then survives rebuilds. Without it the bundle is ad-hoc signed and macOS invalidates the grant after every rebuild (fix a stale grant with `tccutil reset ScreenCapture tech.unravel.nyx`).
 
 ## Use
 
