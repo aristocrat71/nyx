@@ -85,7 +85,7 @@ struct DashboardView: View {
         HStack(spacing: 8) {
             Text("Nyx").font(Theme.font(14, medium: true)).foregroundColor(Theme.text)
             Spacer()
-            Text("⌃⌥⇧N").font(Theme.font(12)).foregroundColor(Theme.muted)
+            Text("⌃⇧L").font(Theme.font(12)).foregroundColor(Theme.muted)
         }
         .padding(.leading, 76)
         .padding(.trailing, 16)
@@ -143,7 +143,7 @@ struct DashboardView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Spacer()
-            Text("Nothing protected yet.\nAdd an app, or press ⌃⌥⇧N while using one.")
+            Text("Nothing protected yet.\nAdd an app, or press ⌃⇧L while using one.")
                 .font(Theme.font(12))
                 .foregroundColor(Theme.muted)
                 .multilineTextAlignment(.center)

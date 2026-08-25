@@ -19,7 +19,7 @@ Run `./scripts/make-dev-cert.sh` once to create a self-signed "Nyx Dev" signing 
 ## Use
 
 - Nyx lives in the menu bar (owl icon) — no Dock icon.
-- Add apps via the dashboard picker, or press **⌃⌥⇧N** while using an app to toggle its protection.
+- Add apps via the dashboard picker, or press **⌃⇧L** while using an app to toggle its protection.
 - The protected list persists at `~/Library/Application Support/Nyx/protected.json`.
 
 ## Known limitations (v1)

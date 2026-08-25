@@ -19,7 +19,8 @@ final class ProtectionList: ObservableObject {
     @Published var protectionEnabled: Bool = true {
         didSet { if !isLoading { persistAndNotify() } }
     }
-    var hotkey = HotkeySpec(keyCode: 45, carbonModifiers: 0x1000 | 0x0800 | 0x0200)
+    // ⌃⇧L — Carbon controlKey|shiftKey, kVK_ANSI_L
+    var hotkey = HotkeySpec(keyCode: 37, carbonModifiers: 0x1000 | 0x0200)
     private var isLoading = false
 
     private struct Store: Codable {
