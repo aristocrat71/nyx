@@ -4,7 +4,8 @@ NSLog("nyx: alive")
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let engine = OverlayEngine()
-    lazy var watcher = ForegroundWatcher(engine: engine)
+    let list = ProtectionList()
+    lazy var watcher = ForegroundWatcher(engine: engine, list: list)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if !CGPreflightScreenCaptureAccess() {

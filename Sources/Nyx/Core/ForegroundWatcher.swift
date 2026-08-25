@@ -2,10 +2,11 @@ import AppKit
 
 final class ForegroundWatcher {
     private let engine: OverlayEngine
-    var protectedBundleIDs: Set<String> = ["com.apple.TextEdit"]
+    private let list: ProtectionList
 
-    init(engine: OverlayEngine) {
+    init(engine: OverlayEngine, list: ProtectionList) {
         self.engine = engine
+        self.list = list
     }
 
     func start() {
@@ -13,6 +14,12 @@ final class ForegroundWatcher {
             self,
             selector: #selector(appActivated(_:)),
             name: NSWorkspace.didActivateApplicationNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(listChanged),
+            name: ProtectionList.changed,
             object: nil
         )
         evaluate(NSWorkspace.shared.frontmostApplication)
@@ -27,10 +34,15 @@ final class ForegroundWatcher {
         evaluate(app)
     }
 
+    @objc private func listChanged() {
+        reevaluate()
+    }
+
     private func evaluate(_ app: NSRunningApplication?) {
-        guard let app, let bundleID = app.bundleIdentifier,
+        guard list.protectionEnabled,
+              let app, let bundleID = app.bundleIdentifier,
               app.processIdentifier != NSRunningApplication.current.processIdentifier,
-              protectedBundleIDs.contains(bundleID)
+              list.contains(bundleID)
         else {
             engine.disengage()
             return
