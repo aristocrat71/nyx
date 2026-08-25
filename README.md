@@ -7,9 +7,12 @@ Requires macOS 14+ and Screen Recording permission.
 ## Build
 
 ```sh
-swift build            # dev build
-swift run              # run from the terminal
-./scripts/make-app.sh  # assemble build/Nyx.app (tray app, bundled fonts, icon)
+make dev      # debug build
+make run      # run from the terminal
+make release  # optimized build
+make app      # assemble build/Nyx.app (tray app, bundled fonts, icon)
+make icon     # regenerate assets/AppIcon.icns from scripts/render-icon.swift
+make clean    # remove build artifacts
 ```
 
 The bundle is ad-hoc signed, so macOS may re-ask for Screen Recording permission after a rebuild.
