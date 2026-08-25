@@ -83,7 +83,6 @@ struct DashboardView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Text("🦉").font(.system(size: 15))
             Text("Nyx").font(Theme.font(14, medium: true)).foregroundColor(Theme.text)
             Spacer()
             Text("⌃⌥⇧N").font(Theme.font(12)).foregroundColor(Theme.muted)
@@ -144,7 +143,6 @@ struct DashboardView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Spacer()
-            Text("🦉").font(.system(size: 40)).opacity(0.5)
             Text("Nothing protected yet.\nAdd an app, or press ⌃⌥⇧N while using one.")
                 .font(Theme.font(12))
                 .foregroundColor(Theme.muted)
@@ -176,17 +174,23 @@ struct DashboardView: View {
     }
 
     private var statusLine: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(model.isEngaged ? Theme.amber : Theme.muted.opacity(0.5))
-                .frame(width: 6, height: 6)
-            Text(model.isEngaged ? "Protection active" : "Idle")
-                .font(Theme.font(12))
-                .foregroundColor(model.isEngaged ? Theme.text : Theme.muted)
-            Spacer()
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(model.isEngaged ? Theme.amber : Theme.muted.opacity(0.5))
+                    .frame(width: 6, height: 6)
+                Text(model.isEngaged ? "Protection active" : "Idle")
+                    .font(Theme.font(12))
+                    .foregroundColor(model.isEngaged ? Theme.text : Theme.muted)
+                Spacer()
+            }
+            Text("macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac.")
+                .font(Theme.font(10))
+                .foregroundColor(Theme.muted.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 16)
-        .frame(height: 40)
+        .padding(.vertical, 10)
     }
 
     private func openScreenRecordingSettings() {

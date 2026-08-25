@@ -24,6 +24,8 @@ Run `./scripts/make-dev-cert.sh` once to create a self-signed "Nyx Dev" signing 
 
 ## Known limitations (v1)
 
+- macOS shows its screen-capture indicator ("Nyx — Currently Sharing") while a window is mirrored. There is no API to suppress it; the mirror is local-only and never leaves your Mac. Clicking the system "Stop Sharing" turns Nyx protection off (re-enable from the owl menu).
+
 - Frontmost window of the app only; browsers are protected as whole apps, not per-tab.
 - Notifications from a protected app are not covered.
 - Brief overlay misalignment while dragging a protected window is expected.

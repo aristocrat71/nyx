@@ -6,13 +6,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let engine = OverlayEngine()
     let list = ProtectionList()
     let hotkeys = HotkeyManager()
-    let toasts = ToastCenter()
     let model = AppModel()
     lazy var watcher = ForegroundWatcher(engine: engine, list: list)
     lazy var tray = TrayController(list: list)
     lazy var dashboard = DashboardWindowController(list: list, model: model)
-    private var lastEngagedName: String?
-    private var suppressDisengageToast = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Theme.registerBundledFonts()
@@ -22,6 +19,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         engine.onStateChange = { [weak self] engaged in self?.engineStateChanged(engaged) }
         engine.onStreamFailure = { [weak self] in self?.streamFailed() }
+        engine.onUserStoppedCapture = { [weak self] in
+            NSLog("nyx: capture stopped from system UI — protection off")
+            self?.list.protectionEnabled = false
+        }
         tray.onOpenDashboard = { [weak self] in self?.dashboard.show() }
         NotificationCenter.default.addObserver(
             self,
@@ -40,18 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func engineStateChanged(_ engaged: Bool) {
         model.isEngaged = engaged
         tray.setEngaged(engaged)
-        if engaged {
-            suppressDisengageToast = false
-            lastEngagedName = engine.engagedPID
-                .flatMap { NSRunningApplication(processIdentifier: $0)?.localizedName }
-            toasts.show("Viewers cannot see this window", accent: true)
-        } else {
-            if suppressDisengageToast {
-                suppressDisengageToast = false
-            } else if let name = lastEngagedName {
-                toasts.show("\(name) visible to viewers", accent: false)
-            }
-            lastEngagedName = nil
+        if !engaged {
             DispatchQueue.main.async { [weak self] in self?.watcher.reevaluate() }
         }
     }
@@ -67,7 +57,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func screensChanged() {
         guard engine.isEngaged else { return }
         NSLog("nyx: screen configuration changed, disengaging")
-        suppressDisengageToast = true
         engine.disengage()
     }
 
@@ -77,13 +66,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
               app.processIdentifier != NSRunningApplication.current.processIdentifier,
               bundleID != "com.apple.finder"
         else {
-            toasts.show("Can't protect this app", accent: false)
+            NSLog("nyx: hotkey ignored — can't protect this app")
             return
         }
         let name = app.localizedName ?? bundleID
-        suppressDisengageToast = list.contains(bundleID)
         let nowProtected = list.toggle(bundleID: bundleID, name: name)
-        toasts.show(nowProtected ? "\(name) protected" : "\(name) visible to viewers", accent: nowProtected)
+        NSLog("nyx: hotkey — \(name) \(nowProtected ? "protected" : "visible to viewers")")
     }
 
     func applicationWillTerminate(_ notification: Notification) {

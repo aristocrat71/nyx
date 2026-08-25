@@ -42,6 +42,7 @@ final class OverlayEngine: NSObject {
     private(set) var engagedPID: pid_t?
     var isEngaged: Bool { engagedPID != nil }
     var onStreamFailure: (() -> Void)?
+    var onUserStoppedCapture: (() -> Void)?
     var onStateChange: ((Bool) -> Void)?
 
     private var placeholder: OverlayWindow?
@@ -254,10 +255,17 @@ extension OverlayEngine: SCStreamOutput, SCStreamDelegate {
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
         NSLog("nyx: stream stopped with error: \(error.localizedDescription)")
+        let nsError = error as NSError
+        let userStopped = nsError.domain == SCStreamErrorDomain
+            && nsError.code == SCStreamError.Code.userStopped.rawValue
         DispatchQueue.main.async { [weak self] in
             guard let self, self.isEngaged else { return }
             self.disengage()
-            self.onStreamFailure?()
+            if userStopped {
+                self.onUserStoppedCapture?()
+            } else {
+                self.onStreamFailure?()
+            }
         }
     }
 }
