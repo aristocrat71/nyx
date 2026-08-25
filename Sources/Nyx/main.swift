@@ -5,6 +5,8 @@ NSLog("nyx: alive")
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let engine = OverlayEngine()
     let list = ProtectionList()
+    let hotkeys = HotkeyManager()
+    let toasts = ToastCenter()
     lazy var watcher = ForegroundWatcher(engine: engine, list: list)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -13,6 +15,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             CGRequestScreenCaptureAccess()
         }
         watcher.start()
+        hotkeys.onHotkey = { [weak self] in self?.hotkeyToggled() }
+        hotkeys.register(list.hotkey)
+    }
+
+    private func hotkeyToggled() {
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              let bundleID = app.bundleIdentifier,
+              app.processIdentifier != NSRunningApplication.current.processIdentifier,
+              bundleID != "com.apple.finder"
+        else {
+            toasts.show("Can't protect this app", accent: false)
+            return
+        }
+        let name = app.localizedName ?? bundleID
+        let nowProtected = list.toggle(bundleID: bundleID, name: name)
+        toasts.show(nowProtected ? "\(name) protected" : "\(name) visible to viewers", accent: nowProtected)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
