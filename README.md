@@ -1,4 +1,4 @@
-# Nyx 🦉
+# Nyx
 
 Screen-share privacy for macOS. Share your entire screen; when you switch to a protected app, you see and use it normally while viewers see a black "Nyx is protecting this window" placeholder.
 

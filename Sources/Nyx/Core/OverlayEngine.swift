@@ -25,14 +25,9 @@ struct PlaceholderView: View {
     var body: some View {
         ZStack {
             Color.black.opacity(0.995)
-            VStack(spacing: 14) {
-                Text("Nyx is protecting this window")
-                    .font(Theme.font(22))
-                    .foregroundColor(.white)
-                Text("🦉")
-                    .font(.system(size: 13))
-                    .opacity(0.55)
-            }
+            Text("Nyx is protecting this window")
+                .font(Theme.font(22))
+                .foregroundColor(.white)
         }
         .ignoresSafeArea()
     }
