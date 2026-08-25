@@ -13,5 +13,15 @@ cp assets/Info.plist "$APP/Contents/Info.plist"
 if [ -f assets/AppIcon.icns ]; then
   cp assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 fi
-codesign --force --sign - "$APP"
+IDENTITY="${CODESIGN_IDENTITY:-}"
+if [ -z "$IDENTITY" ] && security find-identity -v -p codesigning | grep -q "Nyx Dev"; then
+  IDENTITY="Nyx Dev"
+fi
+if [ -n "$IDENTITY" ]; then
+  codesign --force --sign "$IDENTITY" "$APP"
+  echo "signed with '$IDENTITY'"
+else
+  codesign --force --sign - "$APP"
+  echo "signed ad-hoc — Screen Recording grant will reset on rebuild; run scripts/make-dev-cert.sh once to fix"
+fi
 echo "built $APP"
