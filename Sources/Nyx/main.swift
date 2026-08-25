@@ -2,38 +2,31 @@ import AppKit
 
 NSLog("nyx: alive")
 
-final class DebugDriver: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate {
     let engine = OverlayEngine()
+    lazy var watcher = ForegroundWatcher(engine: engine)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if !CGPreflightScreenCaptureAccess() {
             NSLog("nyx: screen recording permission missing — requesting")
             CGRequestScreenCaptureAccess()
         }
-        guard let textEdit = NSRunningApplication
-            .runningApplications(withBundleIdentifier: "com.apple.TextEdit").first else {
-            NSLog("nyx: TextEdit is not running — open it and relaunch")
-            NSApp.terminate(nil)
-            return
-        }
-        engine.engage(pid: textEdit.processIdentifier)
-        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            self?.engine.resnap()
-        }
+        watcher.start()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        engine.disengage()
     }
 }
 
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
-let delegate = DebugDriver()
+let delegate = AppDelegate()
 app.delegate = delegate
 
 signal(SIGINT, SIG_IGN)
 let sigintSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
-sigintSource.setEventHandler {
-    delegate.engine.disengage()
-    NSApp.terminate(nil)
-}
+sigintSource.setEventHandler { NSApp.terminate(nil) }
 sigintSource.resume()
 
 app.run()

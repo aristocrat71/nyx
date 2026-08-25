@@ -46,6 +46,7 @@ final class OverlayEngine: NSObject {
     private var targetWindowID: CGWindowID = 0
     private var generation = 0
     private var lastFrameAt: CFTimeInterval = 0
+    private var resnapTimer: Timer?
     private let sampleQueue = DispatchQueue(label: "nyx.mirror.frames")
 
     func engage(pid: pid_t) {
@@ -75,6 +76,9 @@ final class OverlayEngine: NSObject {
         self.mirror = mirror
 
         startStream(windowID: target.id, generation: generation)
+        resnapTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            self?.resnap()
+        }
         NSLog("nyx: engaged pid \(pid) window \(target.id) frame \(NSStringFromRect(frame))")
     }
 
@@ -84,6 +88,8 @@ final class OverlayEngine: NSObject {
         engagedPID = nil
         targetWindowID = 0
         generation += 1
+        resnapTimer?.invalidate()
+        resnapTimer = nil
         if let stream {
             stream.stopCapture { error in
                 if let error { NSLog("nyx: stopCapture error: \(error.localizedDescription)") }
@@ -98,7 +104,7 @@ final class OverlayEngine: NSObject {
 
     // MARK: - Window tracking
 
-    func resnap() {
+    private func resnap() {
         guard let pid = engagedPID else { return }
         guard let target = Self.frontmostWindow(of: pid) else {
             NSLog("nyx: target window gone, disengaging")
