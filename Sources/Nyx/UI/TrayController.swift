@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 final class TrayController: NSObject, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -40,9 +41,32 @@ final class TrayController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
 
+        let launch = NSMenuItem(
+            title: "Launch at Login",
+            action: #selector(toggleLaunchAtLogin),
+            keyEquivalent: ""
+        )
+        launch.target = self
+        launch.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        menu.addItem(launch)
+
         let quit = NSMenuItem(title: "Quit Nyx", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        do {
+            if SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+                NSLog("nyx: launch at login off")
+            } else {
+                try SMAppService.mainApp.register()
+                NSLog("nyx: launch at login on")
+            }
+        } catch {
+            NSLog("nyx: launch at login toggle failed: \(error.localizedDescription)")
+        }
     }
 
     @objc private func toggleProtection() {

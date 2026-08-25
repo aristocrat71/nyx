@@ -11,6 +11,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     lazy var watcher = ForegroundWatcher(engine: engine, list: list)
     lazy var tray = TrayController(list: list)
     lazy var dashboard = DashboardWindowController(list: list, model: model)
+    private var lastEngagedName: String?
+    private var suppressDisengageToast = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Theme.registerBundledFonts()
@@ -18,17 +20,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSLog("nyx: screen recording permission missing — requesting")
             CGRequestScreenCaptureAccess()
         }
-        engine.onStateChange = { [weak self] engaged in
-            self?.model.isEngaged = engaged
-            self?.tray.setEngaged(engaged)
-        }
+        engine.onStateChange = { [weak self] engaged in self?.engineStateChanged(engaged) }
+        engine.onStreamFailure = { [weak self] in self?.streamFailed() }
         tray.onOpenDashboard = { [weak self] in self?.dashboard.show() }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(screensChanged),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil
+        )
         watcher.start()
         hotkeys.onHotkey = { [weak self] in self?.hotkeyToggled() }
         hotkeys.register(list.hotkey)
         if !model.hasScreenPermission || list.apps.isEmpty {
             dashboard.show()
         }
+    }
+
+    private func engineStateChanged(_ engaged: Bool) {
+        model.isEngaged = engaged
+        tray.setEngaged(engaged)
+        if engaged {
+            suppressDisengageToast = false
+            lastEngagedName = engine.engagedPID
+                .flatMap { NSRunningApplication(processIdentifier: $0)?.localizedName }
+            toasts.show("Viewers cannot see this window", accent: true)
+        } else {
+            if suppressDisengageToast {
+                suppressDisengageToast = false
+            } else if let name = lastEngagedName {
+                toasts.show("\(name) visible to viewers", accent: false)
+            }
+            lastEngagedName = nil
+            DispatchQueue.main.async { [weak self] in self?.watcher.reevaluate() }
+        }
+    }
+
+    private func streamFailed() {
+        model.refreshPermission()
+        if !model.hasScreenPermission {
+            NSLog("nyx: screen recording permission lost mid-run")
+            dashboard.show()
+        }
+    }
+
+    @objc private func screensChanged() {
+        guard engine.isEngaged else { return }
+        NSLog("nyx: screen configuration changed, disengaging")
+        suppressDisengageToast = true
+        engine.disengage()
     }
 
     private func hotkeyToggled() {
@@ -41,6 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let name = app.localizedName ?? bundleID
+        suppressDisengageToast = list.contains(bundleID)
         let nowProtected = list.toggle(bundleID: bundleID, name: name)
         toasts.show(nowProtected ? "\(name) protected" : "\(name) visible to viewers", accent: nowProtected)
     }

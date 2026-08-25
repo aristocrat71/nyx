@@ -51,9 +51,16 @@ final class OverlayEngine: NSObject {
     private let sampleQueue = DispatchQueue(label: "nyx.mirror.frames")
 
     func engage(pid: pid_t) {
-        if isEngaged { disengage() }
+        let wasEngaged = isEngaged
+        if wasEngaged { disengage(notify: false) }
+        guard CGPreflightScreenCaptureAccess() else {
+            NSLog("nyx: cannot engage — no screen recording permission")
+            if wasEngaged { onStateChange?(false) }
+            return
+        }
         guard let target = Self.frontmostWindow(of: pid) else {
             NSLog("nyx: engage failed — no capturable window for pid \(pid)")
+            if wasEngaged { onStateChange?(false) }
             return
         }
         engagedPID = pid
@@ -84,7 +91,7 @@ final class OverlayEngine: NSObject {
         onStateChange?(true)
     }
 
-    func disengage() {
+    func disengage(notify: Bool = true) {
         guard isEngaged else { return }
         NSLog("nyx: disengage pid \(engagedPID ?? -1)")
         engagedPID = nil
@@ -102,7 +109,7 @@ final class OverlayEngine: NSObject {
         mirror?.orderOut(nil)
         placeholder = nil
         mirror = nil
-        onStateChange?(false)
+        if notify { onStateChange?(false) }
     }
 
     // MARK: - Window tracking
