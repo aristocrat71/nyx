@@ -8,11 +8,14 @@ final class OverlayWindow: NSWindow {
 
     init(frame: CGRect) {
         super.init(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
-        isOpaque = true
-        backgroundColor = .black
+        // Non-opaque so macOS never reports the covered window as occluded —
+        // Electron/Chromium apps stop rendering (frozen mirror) when occluded.
+        isOpaque = false
+        backgroundColor = NSColor.black.withAlphaComponent(0.995)
         hasShadow = false
         ignoresMouseEvents = true
-        level = .screenSaver
+        // Above all app windows, below the Dock-owned Cmd+Tab switcher and menus.
+        level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.dockWindow)) - 1)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         isReleasedWhenClosed = false
     }
@@ -21,7 +24,7 @@ final class OverlayWindow: NSWindow {
 struct PlaceholderView: View {
     var body: some View {
         ZStack {
-            Color.black
+            Color.black.opacity(0.995)
             VStack(spacing: 14) {
                 Text("Nyx is protecting this window")
                     .font(Theme.font(22))
@@ -75,7 +78,7 @@ final class OverlayEngine: NSObject {
         let mirror = OverlayWindow(frame: frame)
         mirror.sharingType = .none
         mirror.contentView?.wantsLayer = true
-        mirror.contentView?.layer?.backgroundColor = NSColor.black.cgColor
+        mirror.contentView?.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.995).cgColor
         mirror.contentView?.layer?.contentsGravity = .resize
 
         placeholder.orderFront(nil)
