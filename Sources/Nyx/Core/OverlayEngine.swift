@@ -39,6 +39,7 @@ final class OverlayEngine: NSObject {
     private(set) var engagedPID: pid_t?
     var isEngaged: Bool { engagedPID != nil }
     var onStreamFailure: (() -> Void)?
+    var onStateChange: ((Bool) -> Void)?
 
     private var placeholder: OverlayWindow?
     private var mirror: OverlayWindow?
@@ -80,6 +81,7 @@ final class OverlayEngine: NSObject {
             self?.resnap()
         }
         NSLog("nyx: engaged pid \(pid) window \(target.id) frame \(NSStringFromRect(frame))")
+        onStateChange?(true)
     }
 
     func disengage() {
@@ -100,6 +102,7 @@ final class OverlayEngine: NSObject {
         mirror?.orderOut(nil)
         placeholder = nil
         mirror = nil
+        onStateChange?(false)
     }
 
     // MARK: - Window tracking

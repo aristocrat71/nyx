@@ -8,6 +8,7 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "Nyx",
+            resources: [.copy("Resources/Fonts")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]

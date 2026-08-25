@@ -7,16 +7,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let list = ProtectionList()
     let hotkeys = HotkeyManager()
     let toasts = ToastCenter()
+    let model = AppModel()
     lazy var watcher = ForegroundWatcher(engine: engine, list: list)
+    lazy var tray = TrayController(list: list)
+    lazy var dashboard = DashboardWindowController(list: list, model: model)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Theme.registerBundledFonts()
         if !CGPreflightScreenCaptureAccess() {
             NSLog("nyx: screen recording permission missing — requesting")
             CGRequestScreenCaptureAccess()
         }
+        engine.onStateChange = { [weak self] engaged in
+            self?.model.isEngaged = engaged
+            self?.tray.setEngaged(engaged)
+        }
+        tray.onOpenDashboard = { [weak self] in self?.dashboard.show() }
         watcher.start()
         hotkeys.onHotkey = { [weak self] in self?.hotkeyToggled() }
         hotkeys.register(list.hotkey)
+        if !model.hasScreenPermission || list.apps.isEmpty {
+            dashboard.show()
+        }
     }
 
     private func hotkeyToggled() {

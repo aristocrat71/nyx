@@ -1,6 +1,21 @@
+import CoreText
 import SwiftUI
 
 enum Theme {
+    static func registerBundledFonts() {
+        guard let urls = Bundle.module.urls(forResourcesWithExtension: "ttf", subdirectory: "Fonts"),
+              !urls.isEmpty else {
+            NSLog("nyx: no bundled fonts found, using system monospaced")
+            return
+        }
+        for url in urls {
+            var error: Unmanaged<CFError>?
+            if !CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error) {
+                NSLog("nyx: font registration failed for \(url.lastPathComponent)")
+            }
+        }
+    }
+
     static let background = Color(nsColor: NSColor(hex: 0x0E0F12))
     static let panel = Color(nsColor: NSColor(hex: 0x16181D))
     static let text = Color(nsColor: NSColor(hex: 0xE8E8E8))
