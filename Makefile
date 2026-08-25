@@ -1,7 +1,4 @@
-.PHONY: dev run release app icon clean
-
-dev:
-	swift build
+.PHONY: run release app icon clean
 
 run:
 	swift run
