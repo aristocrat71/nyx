@@ -1,6 +1,7 @@
 import AppKit
 import ServiceManagement
 
+@MainActor
 final class TrayController: NSObject, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let list: ProtectionList

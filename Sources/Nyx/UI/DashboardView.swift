@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
+@MainActor
 final class AppModel: ObservableObject {
     @Published var state: ProtectionState = .idle
     @Published var hasScreenPermission = CGPreflightScreenCaptureAccess()
@@ -262,6 +263,7 @@ private struct AppRow: View {
 /// claims it, so an app that squats a protected identifier could put its own
 /// artwork in this list. Icons are only taken from a bundle that satisfies the
 /// identity pinned when the app was added.
+@MainActor
 private enum AppIcons {
     private static var cache: [String: NSImage] = [:]
 

@@ -9,6 +9,7 @@ enum ProtectionState: Equatable {
     case blind
 }
 
+@MainActor
 final class OverlayEngine: NSObject {
     /// Fast enough that a drag cannot outrun the placeholder by more than the
     /// bleed margin, and cheap enough to leave running while engaged.
@@ -47,7 +48,7 @@ final class OverlayEngine: NSObject {
         // or go async has a chance to run.
         resnap()
         let timer = Timer(timeInterval: Self.resnapInterval, repeats: true) { [weak self] _ in
-            self?.resnap()
+            MainActor.assumeIsolated { self?.resnap() }
         }
         RunLoop.main.add(timer, forMode: .common)
         resnapTimer = timer

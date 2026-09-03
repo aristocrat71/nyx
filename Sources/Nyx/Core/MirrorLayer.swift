@@ -4,6 +4,7 @@ import ScreenCaptureKit
 /// What the user sees through the placeholders: one capture-excluded window per
 /// display, showing every window the protected app owns — including its menus,
 /// which a per-window stream cannot follow.
+@MainActor
 final class MirrorLayer: NSObject {
     enum Failure {
         case noPermission
@@ -32,6 +33,7 @@ final class MirrorLayer: NSObject {
             return
         }
         SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: true) { [weak self] content, error in
+            let snapshot = Snapshot(content)
             DispatchQueue.main.async {
                 guard let self, self.generation == gen else { return }
                 if let error {
@@ -39,6 +41,7 @@ final class MirrorLayer: NSObject {
                     self.onFailure?(.setupFailed)
                     return
                 }
+                let content = snapshot.content
                 guard let app = content?.applications.first(where: { $0.processID == pid }) else {
                     // Normal right after launch: the app has no shareable
                     // windows yet. The retry backoff picks it up.
@@ -141,7 +144,7 @@ final class MirrorLayer: NSObject {
 }
 
 extension MirrorLayer: SCStreamDelegate {
-    func stream(_ stream: SCStream, didStopWithError error: Error) {
+    nonisolated func stream(_ stream: SCStream, didStopWithError error: Error) {
         let nsError = error as NSError
         let userStopped = nsError.domain == SCStreamErrorDomain
             && nsError.code == SCStreamError.Code.userStopped.rawValue
@@ -152,6 +155,15 @@ extension MirrorLayer: SCStreamDelegate {
             self.onFailure?(userStopped ? .userStopped : .setupFailed)
         }
     }
+}
+
+/// SCShareableContent and the objects it vends are immutable snapshots handed
+/// over on ScreenCaptureKit's own queue and never touched again, so moving one
+/// to the main queue is safe even though the type carries no Sendable promise.
+private struct Snapshot: @unchecked Sendable {
+    let content: SCShareableContent?
+
+    init(_ content: SCShareableContent?) { self.content = content }
 }
 
 private final class DisplayOutput: NSObject, SCStreamOutput {

@@ -1,5 +1,6 @@
 import AppKit
 
+@MainActor
 final class ForegroundWatcher {
     private let engine: OverlayEngine
     private let list: ProtectionList

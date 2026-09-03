@@ -2,6 +2,7 @@ import AppKit
 
 Log.ui.debug("alive")
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let engine = OverlayEngine()
     let list = ProtectionList()

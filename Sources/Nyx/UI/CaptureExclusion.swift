@@ -5,6 +5,7 @@ import SwiftUI
 /// the dashboard's `sharingType` and default to `.readOnly`, so viewers would
 /// see the app picker and the protection state. Both are excluded before they
 /// are first displayed.
+@MainActor
 enum CaptureExclusion {
     /// Call from `menuNeedsUpdate`/`menuWillOpen`: the menu's window already
     /// exists there but is not yet visible.

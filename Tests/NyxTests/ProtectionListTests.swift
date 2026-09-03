@@ -74,7 +74,7 @@ struct ProtectionListDecodingTests {
     func hostileHotkeyFallsBackToTheDefault(hotkey: String) {
         let result = decode(#"{"apps":[],"hotkey":\#(hotkey)}"#)
         #expect(result.rejectedHotkey)
-        #expect(result.hotkey == ProtectionList.defaultHotkey)
+        #expect(result.hotkey == HotkeySpec.standard)
     }
 
     @Test(arguments: [cmdKey, controlKey, optionKey, cmdKey | shiftKey, controlKey | shiftKey])
@@ -83,7 +83,7 @@ struct ProtectionListDecodingTests {
     }
 
     @Test func defaultHotkeyIsWellFormed() {
-        #expect(ProtectionList.defaultHotkey.isWellFormed)
+        #expect(HotkeySpec.standard.isWellFormed)
     }
 
     @Test func pinnedRequirementSurvivesARoundTrip() {

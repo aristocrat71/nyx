@@ -9,12 +9,12 @@ let package = Package(
         .executableTarget(
             name: "Nyx",
             resources: [.copy("Resources/Fonts")],
-            swiftSettings: [.swiftLanguageMode(.v5)]
+            swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(
             name: "NyxTests",
             dependencies: ["Nyx"],
-            swiftSettings: [.swiftLanguageMode(.v5)]
+            swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]
 )

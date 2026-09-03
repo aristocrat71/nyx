@@ -32,6 +32,9 @@ struct HotkeySpec: Codable, Equatable {
     private static let allowedModifiers = UInt32(cmdKey | shiftKey | optionKey | controlKey)
     private static let requiredModifiers = UInt32(cmdKey | optionKey | controlKey)
 
+    /// Control-Shift-L: Carbon controlKey|shiftKey with kVK_ANSI_L.
+    static let standard = HotkeySpec(keyCode: 37, carbonModifiers: UInt32(controlKey | shiftKey))
+
     /// The spec goes straight to RegisterEventHotKey, so it is checked before
     /// use: a real virtual key code, only real modifier bits, and at least one
     /// non-shift modifier so a file cannot bind a bare letter key.
@@ -42,10 +45,10 @@ struct HotkeySpec: Codable, Equatable {
     }
 }
 
+@MainActor
 final class ProtectionList: ObservableObject {
     static let changed = Notification.Name("nyx.protectionList.changed")
-    static let defaultHotkey = HotkeySpec(keyCode: 37, carbonModifiers: UInt32(controlKey | shiftKey))
-    private static let maxApps = 200
+    private nonisolated static let maxApps = 200
 
     @Published private(set) var apps: [ProtectedApp] = []
     @Published var protectionEnabled: Bool = true {
@@ -56,7 +59,7 @@ final class ProtectionList: ObservableObject {
     /// quietly presenting an empty list as "nothing to protect".
     @Published private(set) var loadFailed = false
 
-    var hotkey = ProtectionList.defaultHotkey
+    var hotkey = HotkeySpec.standard
     private var isLoading = false
 
     private struct Store: Codable {
@@ -133,7 +136,7 @@ final class ProtectionList: ObservableObject {
 
     struct Loaded: Equatable {
         var apps: [ProtectedApp] = []
-        var hotkey = ProtectionList.defaultHotkey
+        var hotkey = HotkeySpec.standard
         var droppedApps = 0
         var rejectedHotkey = false
         var failed = false
@@ -141,7 +144,7 @@ final class ProtectionList: ObservableObject {
 
     /// Everything a hostile or corrupt file can influence, in one pure function
     /// so it can be tested without touching Application Support.
-    static func decode(_ data: Data) -> Loaded {
+    nonisolated static func decode(_ data: Data) -> Loaded {
         guard let store = try? JSONDecoder().decode(Store.self, from: data) else {
             return Loaded(failed: true)
         }

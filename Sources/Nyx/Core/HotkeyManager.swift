@@ -1,12 +1,18 @@
 import AppKit
 import Carbon.HIToolbox
 
+@MainActor
 final class HotkeyManager {
     var onHotkey: (() -> Void)?
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
 
-    deinit { unregister() }
+    // Carbon holds an unretained pointer to self; releasing without tearing
+    // the handler down would leave it dangling.
+    isolated deinit {
+        if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
+        if let eventHandlerRef { RemoveEventHandler(eventHandlerRef) }
+    }
 
     func register(_ spec: HotkeySpec) {
         unregister()
@@ -20,8 +26,11 @@ final class HotkeyManager {
         )
         InstallEventHandler(GetEventDispatcherTarget(), { _, _, userData in
             guard let userData else { return noErr }
-            let manager = Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue()
-            DispatchQueue.main.async { manager.onHotkey?() }
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue().onHotkey?()
+                }
+            }
             return noErr
         }, 1, &eventType, Unmanaged.passUnretained(self).toOpaque(), &eventHandlerRef)
 
