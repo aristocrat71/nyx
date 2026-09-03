@@ -261,6 +261,7 @@ private struct RunningAppsPicker: View {
         }
         .frame(width: 260, height: 320)
         .background(Theme.panel)
+        .background(CaptureExcluded())
         .onAppear(perform: load)
     }
 

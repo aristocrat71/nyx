@@ -24,6 +24,7 @@ final class TrayController: NSObject, NSMenuDelegate {
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
+        CaptureExclusion.excludeMenuWindows()
         menu.removeAllItems()
 
         let toggle = NSMenuItem(
