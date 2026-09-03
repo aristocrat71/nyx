@@ -16,17 +16,30 @@ enum Theme {
         }
     }
 
-    static let background = Color(nsColor: NSColor(hex: 0x0E0F12))
-    static let panel = Color(nsColor: NSColor(hex: 0x16181D))
-    static let text = Color(nsColor: NSColor(hex: 0xE8E8E8))
-    static let muted = Color(nsColor: NSColor(hex: 0x8A8F98))
-    static let amber = Color(nsColor: NSColor(hex: 0xF5A623))
-    static let danger = Color(nsColor: NSColor(hex: 0xE5534B))
-
-    static let backgroundNS = NSColor(hex: 0x0E0F12)
-    static let panelNS = NSColor(hex: 0x16181D)
+    static let backgroundNS = NSColor.themed(light: 0xF6F6F7, dark: 0x0E0F12)
+    static let panelNS = NSColor.themed(light: 0xFFFFFF, dark: 0x16181D)
+    static let textNS = NSColor.themed(light: 0x1A1C20, dark: 0xE8E8E8)
+    static let mutedNS = NSColor.themed(light: 0x6B7078, dark: 0x8A8F98)
+    static let hairlineNS = NSColor.themed(light: 0x000000, dark: 0xFFFFFF, alpha: 0.09)
+    static let rowHighlightNS = NSColor.themed(light: 0x000000, dark: 0xFFFFFF, alpha: 0.05)
+    /// The tray dot and the banner fill keep one amber across both appearances;
+    /// amber *text* needs the darker tone to stay legible on a light banner.
     static let amberNS = NSColor(hex: 0xF5A623)
-    static let dangerNS = NSColor(hex: 0xE5534B)
+    static let amberTextNS = NSColor.themed(light: 0x8A5B06, dark: 0xF5A623)
+    static let dangerNS = NSColor.themed(light: 0xB3352E, dark: 0xE5534B)
+    /// Sits on the amber fill in both appearances, so it follows neither.
+    static let inkOnAmberNS = NSColor(hex: 0x1A1206)
+
+    static let background = Color(nsColor: backgroundNS)
+    static let panel = Color(nsColor: panelNS)
+    static let text = Color(nsColor: textNS)
+    static let muted = Color(nsColor: mutedNS)
+    static let amber = Color(nsColor: amberNS)
+    static let amberText = Color(nsColor: amberTextNS)
+    static let danger = Color(nsColor: dangerNS)
+    static let hairline = Color(nsColor: hairlineNS)
+    static let rowHighlight = Color(nsColor: rowHighlightNS)
+    static let inkOnAmber = Color(nsColor: inkOnAmberNS)
 
     static func nsFont(_ size: CGFloat, medium: Bool = false) -> NSFont {
         let name = medium ? "JetBrainsMono-Medium" : "JetBrainsMono-Regular"
@@ -47,5 +60,14 @@ extension NSColor {
             blue: CGFloat(hex & 0xFF) / 255,
             alpha: 1
         )
+    }
+
+    /// Resolved per appearance rather than at launch, so the dashboard follows
+    /// the system between light and dark without being rebuilt.
+    static func themed(light: UInt32, dark: UInt32, alpha: CGFloat = 1) -> NSColor {
+        NSColor(name: nil) { appearance in
+            let hex = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light
+            return NSColor(hex: hex).withAlphaComponent(alpha)
+        }
     }
 }

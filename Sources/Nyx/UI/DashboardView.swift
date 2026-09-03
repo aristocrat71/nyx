@@ -20,14 +20,13 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
     init(list: ProtectionList, model: AppModel) {
         self.model = model
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 540),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
-        window.appearance = NSAppearance(named: .darkAqua)
         window.backgroundColor = Theme.backgroundNS
         window.isMovableByWindowBackground = true
         window.sharingType = .none
@@ -73,14 +72,14 @@ struct DashboardView: View {
             if list.loadFailed { loadFailureBanner }
             appsSection
             divider
-            statusLine
+            footer
         }
-        .frame(width: 420, height: 520)
+        .frame(width: 420, height: 540)
         .background(Theme.background)
     }
 
     private var divider: some View {
-        Rectangle().fill(Color.white.opacity(0.06)).frame(height: 1)
+        Rectangle().fill(Theme.hairline).frame(height: 1)
     }
 
     private var header: some View {
@@ -98,13 +97,13 @@ struct DashboardView: View {
         HStack(spacing: 10) {
             Text("Nyx needs Screen Recording to mirror your windows")
                 .font(Theme.font(11))
-                .foregroundColor(Theme.amber)
+                .foregroundColor(Theme.amberText)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
             Button(action: openScreenRecordingSettings) {
                 Text("Open Settings")
                     .font(Theme.font(11, medium: true))
-                    .foregroundColor(Theme.backgroundNS.asColor)
+                    .foregroundColor(Theme.inkOnAmber)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
                     .background(Theme.amber)
@@ -183,47 +182,44 @@ struct DashboardView: View {
         }
     }
 
-    private var statusLine: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                Circle().fill(statusColor).frame(width: 6, height: 6)
-                Text(statusTitle)
-                    .font(Theme.font(12))
-                    .foregroundColor(model.state == .idle ? Theme.muted : Theme.text)
-                Spacer()
-            }
-            Text(statusDetail)
+    /// Idle carries no status row: an app doing nothing is the resting state and
+    /// does not need announcing. Engaged states still do.
+    private var footer: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if model.state != .idle { statusRow }
+            Text("Press ⌃⇧L while using an app to protect it, or to stop protecting it.")
+                .font(Theme.font(11))
+                .foregroundColor(Theme.text)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac.")
                 .font(Theme.font(10))
-                .foregroundColor(Theme.muted.opacity(0.7))
+                .foregroundColor(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
     }
 
-    private var statusColor: Color {
-        switch model.state {
-        case .idle: Theme.muted.opacity(0.5)
-        case .active: Theme.amber
-        case .blind: Theme.danger
+    private var statusRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(model.state == .blind ? Theme.danger : Theme.amberText)
+                    .frame(width: 6, height: 6)
+                Text(model.state == .blind ? "Hidden — no local preview" : "Protection active")
+                    .font(Theme.font(12))
+                    .foregroundColor(Theme.text)
+                Spacer()
+            }
+            if model.state == .blind {
+                Text("Viewers see the placeholder, but Nyx cannot mirror the window back to you. Retrying.")
+                    .font(Theme.font(10))
+                    .foregroundColor(Theme.danger)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-    }
-
-    private var statusTitle: String {
-        switch model.state {
-        case .idle: "Idle"
-        case .active: "Protection active"
-        case .blind: "Hidden — no local preview"
-        }
-    }
-
-    private var statusDetail: String {
-        switch model.state {
-        case .blind:
-            "Viewers see the placeholder, but Nyx cannot mirror the window back to you. Retrying."
-        default:
-            "macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac."
-        }
+        .padding(.bottom, 2)
     }
 
     private func openScreenRecordingSettings() {
@@ -253,7 +249,7 @@ private struct AppRow: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 36)
-        .background(hovering ? Color.white.opacity(0.03) : Color.clear)
+        .background(hovering ? Theme.rowHighlight : Color.clear)
         .onHover { hovering = $0 }
     }
 
@@ -304,7 +300,7 @@ private struct RunningAppsPicker: View {
                 .font(Theme.font(12))
                 .foregroundColor(Theme.text)
                 .padding(10)
-            Rectangle().fill(Color.white.opacity(0.06)).frame(height: 1)
+            Rectangle().fill(Theme.hairline).frame(height: 1)
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(filtered, id: \.processIdentifier) { app in
@@ -348,13 +344,9 @@ private struct PickerRow: View {
             }
             .padding(.horizontal, 10)
             .frame(height: 30)
-            .background(hovering ? Color.white.opacity(0.05) : Color.clear)
+            .background(hovering ? Theme.rowHighlight : Color.clear)
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
     }
-}
-
-private extension NSColor {
-    var asColor: Color { Color(nsColor: self) }
 }
