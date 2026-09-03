@@ -1,11 +1,22 @@
 import AppKit
+import Combine
 import SwiftUI
 import UniformTypeIdentifiers
 
 @MainActor
 final class AppModel: ObservableObject {
+    private static let darkKey = "nyx.dashboard.dark"
+
     @Published var state: ProtectionState = .idle
     @Published var hasScreenPermission = CGPreflightScreenCaptureAccess()
+    /// Starts on whatever the Mac is set to, then follows the header button.
+    @Published var isDark: Bool = UserDefaults.standard.object(forKey: darkKey) as? Bool
+        ?? (NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
+    {
+        didSet { UserDefaults.standard.set(isDark, forKey: Self.darkKey) }
+    }
+
+    var appearance: NSAppearance? { NSAppearance(named: isDark ? .darkAqua : .aqua) }
 
     func refreshPermission() {
         let granted = CGPreflightScreenCaptureAccess()
@@ -16,6 +27,7 @@ final class AppModel: ObservableObject {
 final class DashboardWindowController: NSWindowController, NSWindowDelegate {
     private let model: AppModel
     private var permissionTimer: Timer?
+    private var appearanceObserver: AnyCancellable?
 
     init(list: ProtectionList, model: AppModel) {
         self.model = model
@@ -27,6 +39,9 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
         )
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
+        // Set on this window alone, so the button never reaches the tray icon
+        // or anything else Nyx draws.
+        window.appearance = model.appearance
         window.backgroundColor = Theme.backgroundNS
         window.isMovableByWindowBackground = true
         window.sharingType = .none
@@ -37,6 +52,9 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
         window.center()
         super.init(window: window)
         window.delegate = self
+        appearanceObserver = model.$isDark.sink { [weak window] dark in
+            window?.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("not used") }
@@ -83,10 +101,17 @@ struct DashboardView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 12) {
             Text("Nyx").font(Theme.font(14, medium: true)).foregroundColor(Theme.text)
             Spacer()
             Text("⌃⇧L").font(Theme.font(12)).foregroundColor(Theme.muted)
+            Button { model.isDark.toggle() } label: {
+                Text(model.isDark ? "☾" : "☀")
+                    .font(Theme.font(14))
+                    .foregroundColor(Theme.muted)
+            }
+            .buttonStyle(.plain)
+            .help(model.isDark ? "Switch to light" : "Switch to dark")
         }
         .padding(.leading, 76)
         .padding(.trailing, 16)
