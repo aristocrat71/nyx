@@ -1,6 +1,22 @@
 import AppKit
+import CoreText
 import Testing
 @testable import Nyx
+
+@Suite("Bundled font coverage")
+@MainActor
+struct FontCoverageTests {
+    /// A glyph JetBrains Mono lacks renders as nothing at all, which is how a
+    /// button labelled ☀ ended up invisible rather than merely ugly.
+    @Test(arguments: ["⌃⇧L", "✕", "+ Add app…", "Light", "Dark", "PROTECTED APPS", "Nyx"])
+    func everyLabelTheDashboardDrawsHasGlyphs(label: String) {
+        Theme.registerBundledFonts()
+        let font = Theme.nsFont(12)
+        var utf16 = Array(label.utf16)
+        var glyphs = [CGGlyph](repeating: 0, count: utf16.count)
+        #expect(CTFontGetGlyphsForCharacters(font, &utf16, &glyphs, utf16.count))
+    }
+}
 
 @Suite("Theme appearances")
 @MainActor

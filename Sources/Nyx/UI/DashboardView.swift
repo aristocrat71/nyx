@@ -106,12 +106,10 @@ struct DashboardView: View {
             Spacer()
             Text("⌃⇧L").font(Theme.font(12)).foregroundColor(Theme.muted)
             Button { model.isDark.toggle() } label: {
-                Text(model.isDark ? "☾" : "☀")
-                    .font(Theme.font(14))
-                    .foregroundColor(Theme.muted)
+                Text(model.isDark ? "Light" : "Dark").pill()
             }
             .buttonStyle(.plain)
-            .help(model.isDark ? "Switch to light" : "Switch to dark")
+            .help(model.isDark ? "Switch the dashboard to light" : "Switch the dashboard to dark")
         }
         .padding(.leading, 76)
         .padding(.trailing, 16)
@@ -192,13 +190,10 @@ struct DashboardView: View {
 
     private var addButton: some View {
         Button { showingPicker = true } label: {
-            Text("+ Add app…")
-                .font(Theme.font(12))
-                .foregroundColor(Theme.muted)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
+            Text("+ Add app…").pill()
         }
         .buttonStyle(.plain)
+        .padding(.horizontal, 16)
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
             RunningAppsPicker(alreadyProtected: Set(list.apps.map(\.bundleID))) { app in
                 list.add(app)
@@ -253,6 +248,20 @@ struct DashboardView: View {
     }
 }
 
+/// Buttons in this window are all text, so they need a border to read as
+/// controls rather than as labels.
+private extension View {
+    func pill() -> some View {
+        font(Theme.font(11, medium: true))
+            .foregroundColor(Theme.text)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Theme.control)
+            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.controlBorder, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+}
+
 private struct AppRow: View {
     let app: ProtectedApp
     let onRemove: () -> Void
@@ -265,12 +274,13 @@ private struct AppRow: View {
                 .frame(width: 20, height: 20)
             Text(app.name).font(Theme.font(13)).foregroundColor(Theme.text)
             Spacer()
-            if hovering {
-                Button(action: onRemove) {
-                    Text("✕").font(Theme.font(12)).foregroundColor(Theme.muted)
-                }
-                .buttonStyle(.plain)
+            Button(action: onRemove) {
+                Text("✕")
+                    .font(Theme.font(12))
+                    .foregroundColor(hovering ? Theme.text : Theme.muted)
             }
+            .buttonStyle(.plain)
+            .help("Stop protecting \(app.name)")
         }
         .padding(.horizontal, 16)
         .frame(height: 36)
