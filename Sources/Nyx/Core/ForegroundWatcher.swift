@@ -48,7 +48,7 @@ final class ForegroundWatcher {
     @objc private func appTerminated(_ notification: Notification) {
         guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
               app.processIdentifier == engine.engagedPID else { return }
-        NSLog("nyx: protected app quit while engaged")
+        Log.watcher.debug("protected app quit while engaged")
         engine.disengage()
     }
 
@@ -63,7 +63,7 @@ final class ForegroundWatcher {
             return
         }
         guard engine.engagedPID != app.processIdentifier else { return }
-        NSLog("nyx: protected app frontmost: \(bundleID)")
+        Log.watcher.debug("protected app frontmost: \(bundleID, privacy: .private)")
         engine.engage(pid: app.processIdentifier)
     }
 

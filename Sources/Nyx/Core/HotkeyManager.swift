@@ -24,9 +24,9 @@ final class HotkeyManager {
             spec.keyCode, spec.carbonModifiers, hotKeyID, GetEventDispatcherTarget(), 0, &hotKeyRef
         )
         if status == noErr {
-            NSLog("nyx: hotkey registered")
+            Log.ui.debug("hotkey registered")
         } else {
-            NSLog("nyx: hotkey registration failed (\(status))")
+            Log.ui.error("hotkey registration failed (\(status, privacy: .public))")
         }
     }
 

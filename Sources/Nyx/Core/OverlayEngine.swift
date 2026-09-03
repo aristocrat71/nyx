@@ -53,12 +53,12 @@ final class OverlayEngine: NSObject {
         let wasEngaged = isEngaged
         if wasEngaged { disengage(notify: false) }
         guard CGPreflightScreenCaptureAccess() else {
-            NSLog("nyx: cannot engage — no screen recording permission")
+            Log.engine.error("cannot engage — no screen recording permission")
             if wasEngaged { onStateChange?(false) }
             return
         }
         guard let target = Self.frontmostWindow(of: pid) else {
-            NSLog("nyx: engage failed — no capturable window for pid \(pid)")
+            Log.engine.error("engage failed — no capturable window for pid \(pid, privacy: .private)")
             if wasEngaged { onStateChange?(false) }
             return
         }
@@ -86,13 +86,13 @@ final class OverlayEngine: NSObject {
         resnapTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             self?.resnap()
         }
-        NSLog("nyx: engaged pid \(pid) window \(target.id) frame \(NSStringFromRect(frame))")
+        Log.engine.debug("engaged pid \(pid, privacy: .private)")
         onStateChange?(true)
     }
 
     func disengage(notify: Bool = true) {
         guard isEngaged else { return }
-        NSLog("nyx: disengage pid \(engagedPID ?? -1)")
+        Log.engine.debug("disengage")
         engagedPID = nil
         targetWindowID = 0
         generation += 1
@@ -100,7 +100,7 @@ final class OverlayEngine: NSObject {
         resnapTimer = nil
         if let stream {
             stream.stopCapture { error in
-                if let error { NSLog("nyx: stopCapture error: \(error.localizedDescription)") }
+                if let error { Log.engine.error("stopCapture error: \(error.localizedDescription, privacy: .public)") }
             }
         }
         stream = nil
@@ -116,12 +116,12 @@ final class OverlayEngine: NSObject {
     private func resnap() {
         guard let pid = engagedPID else { return }
         guard let target = Self.frontmostWindow(of: pid) else {
-            NSLog("nyx: target window gone, disengaging")
+            Log.engine.debug("target window gone, disengaging")
             disengage()
             return
         }
         if target.id != targetWindowID {
-            NSLog("nyx: frontmost window changed within app, re-engaging")
+            Log.engine.debug("frontmost window changed within app, re-engaging")
             engage(pid: pid)
             return
         }
@@ -132,7 +132,7 @@ final class OverlayEngine: NSObject {
             updateStreamSize(target.frame.size)
         }
         if lastFrameAt > 0, CACurrentMediaTime() - lastFrameAt > 2 {
-            NSLog("nyx: frame stall — no mirror frames for \(Int(CACurrentMediaTime() - lastFrameAt))s")
+            Log.engine.error("frame stall — no mirror frames")
             lastFrameAt = CACurrentMediaTime()
         }
     }
@@ -167,13 +167,13 @@ final class OverlayEngine: NSObject {
             DispatchQueue.main.async {
                 guard let self, self.generation == gen else { return }
                 if let error {
-                    NSLog("nyx: shareable content error: \(error.localizedDescription)")
+                    Log.engine.error("shareable content error: \(error.localizedDescription, privacy: .public)")
                     self.disengage()
                     self.onStreamFailure?()
                     return
                 }
                 guard let scWindow = content?.windows.first(where: { $0.windowID == windowID }) else {
-                    NSLog("nyx: SCK could not find window \(windowID)")
+                    Log.engine.error("SCK could not find the target window")
                     self.disengage()
                     return
                 }
@@ -197,13 +197,13 @@ final class OverlayEngine: NSObject {
         do {
             try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: sampleQueue)
         } catch {
-            NSLog("nyx: addStreamOutput failed: \(error.localizedDescription)")
+            Log.engine.error("addStreamOutput failed: \(error.localizedDescription, privacy: .public)")
             disengage()
             return
         }
         stream.startCapture { [weak self] error in
             guard let error else { return }
-            NSLog("nyx: startCapture failed: \(error.localizedDescription)")
+            Log.engine.error("startCapture failed: \(error.localizedDescription, privacy: .public)")
             DispatchQueue.main.async {
                 self?.disengage()
                 self?.onStreamFailure?()
@@ -223,7 +223,7 @@ final class OverlayEngine: NSObject {
         config.showsCursor = false
         config.queueDepth = 5
         stream.updateConfiguration(config) { error in
-            if let error { NSLog("nyx: updateConfiguration error: \(error.localizedDescription)") }
+            if let error { Log.engine.error("updateConfiguration error: \(error.localizedDescription, privacy: .public)") }
         }
     }
 }
@@ -249,7 +249,7 @@ extension OverlayEngine: SCStreamOutput, SCStreamDelegate {
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
-        NSLog("nyx: stream stopped with error: \(error.localizedDescription)")
+        Log.engine.error("stream stopped with error: \(error.localizedDescription, privacy: .public)")
         let nsError = error as NSError
         let userStopped = nsError.domain == SCStreamErrorDomain
             && nsError.code == SCStreamError.Code.userStopped.rawValue

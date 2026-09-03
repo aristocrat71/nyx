@@ -5,13 +5,13 @@ enum Theme {
     static func registerBundledFonts() {
         guard let urls = Bundle.module.urls(forResourcesWithExtension: "ttf", subdirectory: "Fonts"),
               !urls.isEmpty else {
-            NSLog("nyx: no bundled fonts found, using system monospaced")
+            Log.ui.error("no bundled fonts found, using system monospaced")
             return
         }
         for url in urls {
             var error: Unmanaged<CFError>?
             if !CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error) {
-                NSLog("nyx: font registration failed for \(url.lastPathComponent)")
+                Log.ui.error("font registration failed for \(url.lastPathComponent, privacy: .public)")
             }
         }
     }

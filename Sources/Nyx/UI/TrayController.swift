@@ -59,19 +59,19 @@ final class TrayController: NSObject, NSMenuDelegate {
         do {
             if SMAppService.mainApp.status == .enabled {
                 try SMAppService.mainApp.unregister()
-                NSLog("nyx: launch at login off")
+                Log.ui.debug("launch at login off")
             } else {
                 try SMAppService.mainApp.register()
-                NSLog("nyx: launch at login on")
+                Log.ui.debug("launch at login on")
             }
         } catch {
-            NSLog("nyx: launch at login toggle failed: \(error.localizedDescription)")
+            Log.ui.error("launch at login toggle failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 
     @objc private func toggleProtection() {
         list.protectionEnabled.toggle()
-        NSLog("nyx: protection \(list.protectionEnabled ? "on" : "off")")
+        Log.ui.debug("protection \(self.list.protectionEnabled ? "on" : "off", privacy: .public)")
     }
 
     @objc private func openDashboard() { onOpenDashboard?() }

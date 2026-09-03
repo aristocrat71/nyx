@@ -69,7 +69,7 @@ final class ProtectionList: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         guard let data = try? Data(contentsOf: Self.fileURL) else {
-            NSLog("nyx: no protected.json yet, starting empty")
+            Log.store.debug("no protected.json yet, starting empty")
             return
         }
         do {
@@ -78,7 +78,7 @@ final class ProtectionList: ObservableObject {
             if let hk = store.hotkey { hotkey = hk }
             if let enabled = store.protectionEnabled { protectionEnabled = enabled }
         } catch {
-            NSLog("nyx: failed to decode protected.json: \(error.localizedDescription)")
+            Log.store.error("failed to decode protected.json: \(error.localizedDescription, privacy: .private)")
         }
     }
 
@@ -99,7 +99,7 @@ final class ProtectionList: ObservableObject {
             )
             try data.write(to: Self.fileURL, options: .atomic)
         } catch {
-            NSLog("nyx: failed to save protected.json: \(error.localizedDescription)")
+            Log.store.error("failed to save protected.json: \(error.localizedDescription, privacy: .private)")
         }
     }
 }
