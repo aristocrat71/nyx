@@ -1,11 +1,24 @@
 import AppKit
+import Combine
 import SwiftUI
 import UniformTypeIdentifiers
 
 @MainActor
 final class AppModel: ObservableObject {
+    private static let darkKey = "nyx.dashboard.dark"
+
     @Published var state: ProtectionState = .idle
     @Published var hasScreenPermission = CGPreflightScreenCaptureAccess()
+    /// Starts on whatever the Mac is set to, then follows the settings picker.
+    /// Read from the global default rather than NSApp, which is nil until the
+    /// application object exists.
+    @Published var isDark: Bool = UserDefaults.standard.object(forKey: darkKey) as? Bool
+        ?? (UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark")
+    {
+        didSet { UserDefaults.standard.set(isDark, forKey: Self.darkKey) }
+    }
+
+    var appearance: NSAppearance? { NSAppearance(named: isDark ? .darkAqua : .aqua) }
 
     func refreshPermission() {
         let granted = CGPreflightScreenCaptureAccess()
@@ -16,18 +29,21 @@ final class AppModel: ObservableObject {
 final class DashboardWindowController: NSWindowController, NSWindowDelegate {
     private let model: AppModel
     private var permissionTimer: Timer?
+    private var appearanceObserver: AnyCancellable?
 
     init(list: ProtectionList, model: AppModel) {
         self.model = model
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 540),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
-        window.appearance = NSAppearance(named: .darkAqua)
+        // Set on this window alone, so the button never reaches the tray icon
+        // or anything else Nyx draws.
+        window.appearance = model.appearance
         window.backgroundColor = Theme.backgroundNS
         window.isMovableByWindowBackground = true
         window.sharingType = .none
@@ -38,6 +54,9 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
         window.center()
         super.init(window: window)
         window.delegate = self
+        appearanceObserver = model.$isDark.sink { [weak window] dark in
+            window?.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("not used") }
@@ -64,6 +83,7 @@ struct DashboardView: View {
     @ObservedObject var list: ProtectionList
     @ObservedObject var model: AppModel
     @State private var showingPicker = false
+    @State private var showingSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -73,38 +93,89 @@ struct DashboardView: View {
             if list.loadFailed { loadFailureBanner }
             appsSection
             divider
-            statusLine
+            footer
         }
-        .frame(width: 420, height: 520)
+        .frame(width: 420, height: 540)
         .background(Theme.background)
     }
 
     private var divider: some View {
-        Rectangle().fill(Color.white.opacity(0.06)).frame(height: 1)
+        Rectangle().fill(Theme.hairline).frame(height: 1)
     }
 
+    /// The traffic lights float over the top-left of a full-size content view,
+    /// so the first row is theirs and the wordmark starts below them.
     private var header: some View {
-        HStack(spacing: 8) {
-            Text("Nyx").font(Theme.font(14, medium: true)).foregroundColor(Theme.text)
-            Spacer()
-            Text("⌃⇧L").font(Theme.font(12)).foregroundColor(Theme.muted)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Spacer()
+                settingsButton
+            }
+            .frame(height: 30)
+            .padding(.trailing, 12)
+
+            HStack(spacing: 12) {
+                logoTile
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Nyx")
+                        .font(Theme.font(17, medium: true))
+                        .foregroundColor(Theme.text)
+                    Text("Screen-share privacy")
+                        .font(Theme.font(11))
+                        .foregroundColor(Theme.muted)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 18)
         }
-        .padding(.leading, 76)
-        .padding(.trailing, 16)
-        .frame(height: 52)
+    }
+
+    private var logoTile: some View {
+        RoundedRectangle(cornerRadius: 11)
+            .fill(Theme.control)
+            .overlay {
+                if let owl = Theme.owl {
+                    Image(nsImage: owl)
+                        .resizable()
+                        .renderingMode(.template)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 28)
+                        .foregroundColor(Theme.text)
+                }
+            }
+            .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(Theme.controlBorder, lineWidth: 1))
+            .frame(width: 46, height: 46)
+    }
+
+    private var settingsButton: some View {
+        Button { showingSettings = true } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(Theme.muted)
+                .frame(width: 26, height: 24)
+                .background(Theme.control)
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.controlBorder, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .help("Settings")
+        .popover(isPresented: $showingSettings, arrowEdge: .bottom) {
+            SettingsPopover(model: model)
+        }
     }
 
     private var permissionBanner: some View {
         HStack(spacing: 10) {
             Text("Nyx needs Screen Recording to mirror your windows")
                 .font(Theme.font(11))
-                .foregroundColor(Theme.amber)
+                .foregroundColor(Theme.amberText)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
             Button(action: openScreenRecordingSettings) {
                 Text("Open Settings")
                     .font(Theme.font(11, medium: true))
-                    .foregroundColor(Theme.backgroundNS.asColor)
+                    .foregroundColor(Theme.inkOnAmber)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
                     .background(Theme.amber)
@@ -155,6 +226,14 @@ struct DashboardView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Spacer()
+            if let owl = Theme.owl {
+                Image(nsImage: owl)
+                    .resizable()
+                    .renderingMode(.template)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 72)
+                    .foregroundColor(Theme.muted.opacity(0.35))
+            }
             Text("Nothing protected yet.\nAdd an app, or press ⌃⇧L while using one.")
                 .font(Theme.font(12))
                 .foregroundColor(Theme.muted)
@@ -168,13 +247,10 @@ struct DashboardView: View {
 
     private var addButton: some View {
         Button { showingPicker = true } label: {
-            Text("+ Add app…")
-                .font(Theme.font(12))
-                .foregroundColor(Theme.muted)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
+            Text("+ Add app…").pill()
         }
         .buttonStyle(.plain)
+        .padding(.horizontal, 16)
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
             RunningAppsPicker(alreadyProtected: Set(list.apps.map(\.bundleID))) { app in
                 list.add(app)
@@ -183,52 +259,141 @@ struct DashboardView: View {
         }
     }
 
-    private var statusLine: some View {
+    /// Idle carries no status row: an app doing nothing is the resting state and
+    /// does not need announcing. Engaged states still do.
+    private var footer: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if model.state != .idle { statusRow }
+            HStack(spacing: 9) {
+                Text("⌃⇧L")
+                    .font(Theme.font(11, medium: true))
+                    .foregroundColor(Theme.text)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Theme.control)
+                    .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Theme.controlBorder, lineWidth: 1))
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                Text("Protect the app you're using, or unprotect it.")
+                    .font(Theme.font(11))
+                    .foregroundColor(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
+    private var statusRow: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Circle().fill(statusColor).frame(width: 6, height: 6)
-                Text(statusTitle)
+                Circle()
+                    .fill(model.state == .blind ? Theme.danger : Theme.amberText)
+                    .frame(width: 6, height: 6)
+                Text(model.state == .blind ? "Hidden — no local preview" : "Protection active")
                     .font(Theme.font(12))
-                    .foregroundColor(model.state == .idle ? Theme.muted : Theme.text)
+                    .foregroundColor(Theme.text)
                 Spacer()
             }
-            Text(statusDetail)
-                .font(Theme.font(10))
-                .foregroundColor(Theme.muted.opacity(0.7))
-                .fixedSize(horizontal: false, vertical: true)
+            if model.state == .blind {
+                Text("Viewers see the placeholder, but Nyx cannot mirror the window back to you. Retrying.")
+                    .font(Theme.font(10))
+                    .foregroundColor(Theme.danger)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-    }
-
-    private var statusColor: Color {
-        switch model.state {
-        case .idle: Theme.muted.opacity(0.5)
-        case .active: Theme.amber
-        case .blind: Theme.danger
-        }
-    }
-
-    private var statusTitle: String {
-        switch model.state {
-        case .idle: "Idle"
-        case .active: "Protection active"
-        case .blind: "Hidden — no local preview"
-        }
-    }
-
-    private var statusDetail: String {
-        switch model.state {
-        case .blind:
-            "Viewers see the placeholder, but Nyx cannot mirror the window back to you. Retrying."
-        default:
-            "macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac."
-        }
+        .padding(.bottom, 2)
     }
 
     private func openScreenRecordingSettings() {
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!
         NSWorkspace.shared.open(url)
+    }
+}
+
+/// Built rather than taken from the stock segmented style, which brings the
+/// system accent into a window that is otherwise monochrome.
+private struct AppearancePicker: View {
+    @Binding var isDark: Bool
+
+    var body: some View {
+        HStack(spacing: 0) {
+            segment("Light", selected: !isDark) { isDark = false }
+            Rectangle().fill(Theme.controlBorder).frame(width: 1, height: 22)
+            segment("Dark", selected: isDark) { isDark = true }
+        }
+        .background(Theme.control)
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.controlBorder, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private func segment(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(Theme.font(11, medium: true))
+                .foregroundColor(selected ? Theme.text : Theme.muted)
+                .frame(width: 62, height: 24)
+                .background(selected ? Theme.selection : Color.clear)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// A popover is its own window and does not inherit the dashboard's sharing
+/// type, so it is excluded from capture the way the app picker is.
+struct SettingsPopover: View {
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("SETTINGS")
+                .font(Theme.font(10, medium: true))
+                .foregroundColor(Theme.muted)
+                .padding(.horizontal, 14)
+                .padding(.top, 14)
+                .padding(.bottom, 12)
+
+            HStack {
+                Text("Appearance")
+                    .font(Theme.font(12))
+                    .foregroundColor(Theme.text)
+                Spacer()
+                AppearancePicker(isDark: $model.isDark)
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 14)
+
+            Rectangle().fill(Theme.hairline).frame(height: 1)
+
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.muted)
+                Text("macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac.")
+                    .font(Theme.font(11))
+                    .foregroundColor(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(14)
+        }
+        .frame(width: 310)
+        .background(Theme.panel)
+        .background(CaptureExcluded())
+    }
+}
+
+/// Buttons in this window are all text, so they need a border to read as
+/// controls rather than as labels.
+private extension View {
+    func pill() -> some View {
+        font(Theme.font(11, medium: true))
+            .foregroundColor(Theme.text)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Theme.control)
+            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.controlBorder, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 }
 
@@ -244,16 +409,25 @@ private struct AppRow: View {
                 .frame(width: 20, height: 20)
             Text(app.name).font(Theme.font(13)).foregroundColor(Theme.text)
             Spacer()
-            if hovering {
-                Button(action: onRemove) {
-                    Text("✕").font(Theme.font(12)).foregroundColor(Theme.muted)
-                }
-                .buttonStyle(.plain)
+            Button(action: onRemove) {
+                Text("Remove")
+                    .font(Theme.font(10, medium: true))
+                    .foregroundColor(hovering ? Theme.text : Theme.muted)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(hovering ? Theme.control : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .strokeBorder(Theme.controlBorder, lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
             }
+            .buttonStyle(.plain)
+            .help("Stop protecting \(app.name)")
         }
         .padding(.horizontal, 16)
         .frame(height: 36)
-        .background(hovering ? Color.white.opacity(0.03) : Color.clear)
+        .background(hovering ? Theme.rowHighlight : Color.clear)
         .onHover { hovering = $0 }
     }
 
@@ -304,7 +478,7 @@ private struct RunningAppsPicker: View {
                 .font(Theme.font(12))
                 .foregroundColor(Theme.text)
                 .padding(10)
-            Rectangle().fill(Color.white.opacity(0.06)).frame(height: 1)
+            Rectangle().fill(Theme.hairline).frame(height: 1)
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(filtered, id: \.processIdentifier) { app in
@@ -348,13 +522,9 @@ private struct PickerRow: View {
             }
             .padding(.horizontal, 10)
             .frame(height: 30)
-            .background(hovering ? Color.white.opacity(0.05) : Color.clear)
+            .background(hovering ? Theme.rowHighlight : Color.clear)
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
     }
-}
-
-private extension NSColor {
-    var asColor: Color { Color(nsColor: self) }
 }

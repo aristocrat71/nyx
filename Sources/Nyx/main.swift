@@ -57,17 +57,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func hotkeyToggled() {
-        guard let app = NSWorkspace.shared.frontmostApplication,
-              let bundleID = app.bundleIdentifier,
-              app.processIdentifier != NSRunningApplication.current.processIdentifier,
-              bundleID != "com.apple.finder"
-        else {
+        guard let front = FrontmostApp.protectable else {
             Log.ui.debug("hotkey ignored — can't protect this app")
             return
         }
-        let name = app.localizedName ?? bundleID
-        let nowProtected = list.toggle(app)
-        Log.ui.debug("hotkey — \(name, privacy: .private) \(nowProtected ? "protected" : "visible to viewers", privacy: .public)")
+        let nowProtected = list.toggle(front.app)
+        Log.ui.debug("hotkey — \(front.displayName, privacy: .private) \(nowProtected ? "protected" : "visible to viewers", privacy: .public)")
     }
 
     func applicationWillTerminate(_ notification: Notification) {

@@ -85,9 +85,13 @@ final class OverlayEngine: NSObject {
         placeholders.clear()
     }
 
+    /// Cover, then lift the mirror to sit on the covers — in that order, so the
+    /// mirror never rises above a placeholder that has not been placed yet.
     private func resnap() {
         guard let pid = engagedPID else { return }
-        placeholders.cover(WindowIndex.onScreenWindows(of: pid))
+        let targets = WindowIndex.onScreenWindows(of: pid)
+        placeholders.cover(targets)
+        mirror.restack(to: OverlayLevel.mirror(coveringLayers: targets.map(\.layer)))
     }
 
     private func mirrorFailed(_ failure: MirrorLayer.Failure) {

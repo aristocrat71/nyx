@@ -1,16 +1,22 @@
 import AppKit
 
 enum OverlayLevel {
-    private static let base = Int(CGWindowLevelForKey(.dockWindow)) - 1
+    /// Nothing Nyx puts on screen may reach the screen saver: protected content
+    /// must never be composited over a locked screen.
+    private static let ceiling = Int(CGWindowLevelForKey(.screenSaverWindow)) - 1
 
-    /// Above every placeholder, below the screen saver so protected content is
-    /// never composited over a locked screen.
-    static let mirror = Int(CGWindowLevelForKey(.screenSaverWindow)) - 1
-
-    /// Covering a window means sitting above it: menus land at 101 and tooltips
-    /// at 200, far above the ordinary-window level a placeholder used to use.
+    /// One level above the covered window and no higher: the levels over an
+    /// ordinary window hold the Dock, the switcher and the menu bar.
     static func placeholder(coveringLayer layer: Int) -> NSWindow.Level {
-        NSWindow.Level(rawValue: min(max(base, layer + 1), mirror - 1))
+        NSWindow.Level(rawValue: min(layer, ceiling - 2) + 1)
+    }
+
+    /// One step above the tallest placeholder, so the preview lands on the black
+    /// cover and nowhere higher.
+    static func mirror(coveringLayers layers: [Int]) -> NSWindow.Level {
+        let top = layers.lazy.map { placeholder(coveringLayer: $0).rawValue }.max()
+            ?? placeholder(coveringLayer: 0).rawValue
+        return NSWindow.Level(rawValue: min(top + 1, ceiling))
     }
 }
 
@@ -61,8 +67,8 @@ final class PlaceholderWindow: OverlayWindow {
 }
 
 final class MirrorWindow: OverlayWindow {
-    init() {
-        super.init(level: NSWindow.Level(rawValue: OverlayLevel.mirror))
+    override init(level: NSWindow.Level) {
+        super.init(level: level)
         // Set before the window is ever ordered on screen, so no frame of the
         // mirrored content can reach a viewer.
         sharingType = .none
