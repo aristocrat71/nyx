@@ -9,9 +9,11 @@ final class AppModel: ObservableObject {
 
     @Published var state: ProtectionState = .idle
     @Published var hasScreenPermission = CGPreflightScreenCaptureAccess()
-    /// Starts on whatever the Mac is set to, then follows the header button.
+    /// Starts on whatever the Mac is set to, then follows the settings picker.
+    /// Read from the global default rather than NSApp, which is nil until the
+    /// application object exists.
     @Published var isDark: Bool = UserDefaults.standard.object(forKey: darkKey) as? Bool
-        ?? (NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
+        ?? (UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark")
     {
         didSet { UserDefaults.standard.set(isDark, forKey: Self.darkKey) }
     }
@@ -81,6 +83,7 @@ struct DashboardView: View {
     @ObservedObject var list: ProtectionList
     @ObservedObject var model: AppModel
     @State private var showingPicker = false
+    @State private var showingSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -100,28 +103,66 @@ struct DashboardView: View {
         Rectangle().fill(Theme.hairline).frame(height: 1)
     }
 
+    /// The traffic lights float over the top-left of a full-size content view,
+    /// so the first row is theirs and the wordmark starts below them.
     private var header: some View {
-        HStack(spacing: 12) {
-            if let owl = Theme.owl {
-                Image(nsImage: owl)
-                    .resizable()
-                    .renderingMode(.template)
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 22)
-                    .foregroundColor(Theme.text)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Spacer()
+                settingsButton
             }
-            Text("Nyx").font(Theme.font(14, medium: true)).foregroundColor(Theme.text)
-            Spacer()
-            Text("⌃⇧L").font(Theme.font(12)).foregroundColor(Theme.muted)
-            Button { model.isDark.toggle() } label: {
-                Text(model.isDark ? "Light" : "Dark").pill()
+            .frame(height: 30)
+            .padding(.trailing, 12)
+
+            HStack(spacing: 12) {
+                logoTile
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Nyx")
+                        .font(Theme.font(17, medium: true))
+                        .foregroundColor(Theme.text)
+                    Text("Screen-share privacy")
+                        .font(Theme.font(11))
+                        .foregroundColor(Theme.muted)
+                }
+                Spacer()
             }
-            .buttonStyle(.plain)
-            .help(model.isDark ? "Switch the dashboard to light" : "Switch the dashboard to dark")
+            .padding(.horizontal, 16)
+            .padding(.bottom, 18)
         }
-        .padding(.leading, 76)
-        .padding(.trailing, 16)
-        .frame(height: 52)
+    }
+
+    private var logoTile: some View {
+        RoundedRectangle(cornerRadius: 11)
+            .fill(Theme.control)
+            .overlay {
+                if let owl = Theme.owl {
+                    Image(nsImage: owl)
+                        .resizable()
+                        .renderingMode(.template)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 28)
+                        .foregroundColor(Theme.text)
+                }
+            }
+            .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(Theme.controlBorder, lineWidth: 1))
+            .frame(width: 46, height: 46)
+    }
+
+    private var settingsButton: some View {
+        Button { showingSettings = true } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(Theme.muted)
+                .frame(width: 26, height: 24)
+                .background(Theme.control)
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.controlBorder, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .help("Settings")
+        .popover(isPresented: $showingSettings, arrowEdge: .bottom) {
+            SettingsPopover(model: model)
+        }
     }
 
     private var permissionBanner: some View {
@@ -221,20 +262,27 @@ struct DashboardView: View {
     /// Idle carries no status row: an app doing nothing is the resting state and
     /// does not need announcing. Engaged states still do.
     private var footer: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             if model.state != .idle { statusRow }
-            Text("Press ⌃⇧L while using an app to protect it, or to stop protecting it.")
-                .font(Theme.font(11))
-                .foregroundColor(Theme.text)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac.")
-                .font(Theme.font(10))
-                .foregroundColor(Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 9) {
+                Text("⌃⇧L")
+                    .font(Theme.font(11, medium: true))
+                    .foregroundColor(Theme.text)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Theme.control)
+                    .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Theme.controlBorder, lineWidth: 1))
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                Text("Protect the app you're using, or unprotect it.")
+                    .font(Theme.font(11))
+                    .foregroundColor(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 12)
     }
 
     private var statusRow: some View {
@@ -261,6 +309,77 @@ struct DashboardView: View {
     private func openScreenRecordingSettings() {
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!
         NSWorkspace.shared.open(url)
+    }
+}
+
+/// Built rather than taken from the stock segmented style, which brings the
+/// system accent into a window that is otherwise monochrome.
+private struct AppearancePicker: View {
+    @Binding var isDark: Bool
+
+    var body: some View {
+        HStack(spacing: 0) {
+            segment("Light", selected: !isDark) { isDark = false }
+            Rectangle().fill(Theme.controlBorder).frame(width: 1, height: 22)
+            segment("Dark", selected: isDark) { isDark = true }
+        }
+        .background(Theme.control)
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.controlBorder, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private func segment(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(Theme.font(11, medium: true))
+                .foregroundColor(selected ? Theme.text : Theme.muted)
+                .frame(width: 62, height: 24)
+                .background(selected ? Theme.selection : Color.clear)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// A popover is its own window and does not inherit the dashboard's sharing
+/// type, so it is excluded from capture the way the app picker is.
+struct SettingsPopover: View {
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("SETTINGS")
+                .font(Theme.font(10, medium: true))
+                .foregroundColor(Theme.muted)
+                .padding(.horizontal, 14)
+                .padding(.top, 14)
+                .padding(.bottom, 12)
+
+            HStack {
+                Text("Appearance")
+                    .font(Theme.font(12))
+                    .foregroundColor(Theme.text)
+                Spacer()
+                AppearancePicker(isDark: $model.isDark)
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 14)
+
+            Rectangle().fill(Theme.hairline).frame(height: 1)
+
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.muted)
+                Text("macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac.")
+                    .font(Theme.font(11))
+                    .foregroundColor(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(14)
+        }
+        .frame(width: 310)
+        .background(Theme.panel)
+        .background(CaptureExcluded())
     }
 }
 

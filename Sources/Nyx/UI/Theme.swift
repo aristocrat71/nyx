@@ -23,6 +23,7 @@ enum Theme {
     static let hairlineNS = NSColor.themed(light: 0x000000, dark: 0xFFFFFF, alpha: 0.09)
     static let rowHighlightNS = NSColor.themed(light: 0x000000, dark: 0xFFFFFF, alpha: 0.05)
     static let controlNS = NSColor.themed(light: 0x000000, dark: 0xFFFFFF, alpha: 0.07)
+    static let selectionNS = NSColor.themed(light: 0xFFFFFF, dark: 0xFFFFFF, alpha: 0.16)
     static let controlBorderNS = NSColor.themed(light: 0x000000, dark: 0xFFFFFF, alpha: 0.18)
     /// The tray dot and the banner fill keep one amber across both appearances;
     /// amber *text* needs the darker tone to stay legible on a light banner.
@@ -42,6 +43,7 @@ enum Theme {
     static let hairline = Color(nsColor: hairlineNS)
     static let rowHighlight = Color(nsColor: rowHighlightNS)
     static let control = Color(nsColor: controlNS)
+    static let selection = Color(nsColor: selectionNS)
     static let controlBorder = Color(nsColor: controlBorderNS)
     static let inkOnAmber = Color(nsColor: inkOnAmberNS)
 
