@@ -69,6 +69,7 @@ struct DashboardView: View {
             header
             divider
             if !model.hasScreenPermission { permissionBanner }
+            if list.loadFailed { loadFailureBanner }
             appsSection
             divider
             statusLine
@@ -112,6 +113,16 @@ struct DashboardView: View {
         }
         .padding(12)
         .background(Theme.amber.opacity(0.12))
+    }
+
+    private var loadFailureBanner: some View {
+        Text("Nyx could not read your saved list — nothing is protected until you add an app again. The file is at ~/Library/Application Support/Nyx/protected.json.")
+            .font(Theme.font(11))
+            .foregroundColor(Theme.danger)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(Theme.danger.opacity(0.12))
     }
 
     private var appsSection: some View {

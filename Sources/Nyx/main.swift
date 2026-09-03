@@ -33,7 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         watcher.start()
         hotkeys.onHotkey = { [weak self] in self?.hotkeyToggled() }
         hotkeys.register(list.hotkey)
-        if !model.hasScreenPermission || list.apps.isEmpty {
+        if !model.hasScreenPermission || list.loadFailed || list.apps.isEmpty {
             dashboard.show()
         }
     }

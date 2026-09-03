@@ -6,8 +6,14 @@ final class HotkeyManager {
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
 
+    deinit { unregister() }
+
     func register(_ spec: HotkeySpec) {
         unregister()
+        guard spec.isWellFormed else {
+            Log.ui.error("refusing to register a malformed hotkey")
+            return
+        }
         var eventType = EventTypeSpec(
             eventClass: OSType(kEventClassKeyboard),
             eventKind: UInt32(kEventHotKeyPressed)
