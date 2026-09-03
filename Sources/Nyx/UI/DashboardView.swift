@@ -2,8 +2,9 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
+@MainActor
 final class AppModel: ObservableObject {
-    @Published var isEngaged = false
+    @Published var state: ProtectionState = .idle
     @Published var hasScreenPermission = CGPreflightScreenCaptureAccess()
 
     func refreshPermission() {
@@ -69,6 +70,7 @@ struct DashboardView: View {
             header
             divider
             if !model.hasScreenPermission { permissionBanner }
+            if list.loadFailed { loadFailureBanner }
             appsSection
             divider
             statusLine
@@ -112,6 +114,16 @@ struct DashboardView: View {
         }
         .padding(12)
         .background(Theme.amber.opacity(0.12))
+    }
+
+    private var loadFailureBanner: some View {
+        Text("Nyx could not read your saved list — nothing is protected until you add an app again. The file is at ~/Library/Application Support/Nyx/protected.json.")
+            .font(Theme.font(11))
+            .foregroundColor(Theme.danger)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(Theme.danger.opacity(0.12))
     }
 
     private var appsSection: some View {
@@ -165,9 +177,7 @@ struct DashboardView: View {
         .buttonStyle(.plain)
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
             RunningAppsPicker(alreadyProtected: Set(list.apps.map(\.bundleID))) { app in
-                if let bundleID = app.bundleIdentifier {
-                    list.add(bundleID: bundleID, name: app.localizedName ?? bundleID)
-                }
+                list.add(app)
                 showingPicker = false
             }
         }
@@ -176,21 +186,44 @@ struct DashboardView: View {
     private var statusLine: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Circle()
-                    .fill(model.isEngaged ? Theme.amber : Theme.muted.opacity(0.5))
-                    .frame(width: 6, height: 6)
-                Text(model.isEngaged ? "Protection active" : "Idle")
+                Circle().fill(statusColor).frame(width: 6, height: 6)
+                Text(statusTitle)
                     .font(Theme.font(12))
-                    .foregroundColor(model.isEngaged ? Theme.text : Theme.muted)
+                    .foregroundColor(model.state == .idle ? Theme.muted : Theme.text)
                 Spacer()
             }
-            Text("macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac.")
+            Text(statusDetail)
                 .font(Theme.font(10))
                 .foregroundColor(Theme.muted.opacity(0.7))
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
+    }
+
+    private var statusColor: Color {
+        switch model.state {
+        case .idle: Theme.muted.opacity(0.5)
+        case .active: Theme.amber
+        case .blind: Theme.danger
+        }
+    }
+
+    private var statusTitle: String {
+        switch model.state {
+        case .idle: "Idle"
+        case .active: "Protection active"
+        case .blind: "Hidden — no local preview"
+        }
+    }
+
+    private var statusDetail: String {
+        switch model.state {
+        case .blind:
+            "Viewers see the placeholder, but Nyx cannot mirror the window back to you. Retrying."
+        default:
+            "macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac."
+        }
     }
 
     private func openScreenRecordingSettings() {
@@ -206,7 +239,7 @@ private struct AppRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(nsImage: Self.icon(for: app.bundleID))
+            Image(nsImage: AppIcons.icon(for: app))
                 .resizable()
                 .frame(width: 20, height: 20)
             Text(app.name).font(Theme.font(13)).foregroundColor(Theme.text)
@@ -224,11 +257,32 @@ private struct AppRow: View {
         .onHover { hovering = $0 }
     }
 
-    static func icon(for bundleID: String) -> NSImage {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-            return NSWorkspace.shared.icon(forFile: url.path)
+}
+
+/// LaunchServices resolves a bundle identifier to whichever bundle currently
+/// claims it, so an app that squats a protected identifier could put its own
+/// artwork in this list. Icons are only taken from a bundle that satisfies the
+/// identity pinned when the app was added.
+@MainActor
+private enum AppIcons {
+    private static var cache: [String: NSImage] = [:]
+
+    static func icon(for app: ProtectedApp) -> NSImage {
+        if let cached = cache[app.bundleID] { return cached }
+        let image = resolve(app)
+        cache[app.bundleID] = image
+        return image
+    }
+
+    private static func resolve(_ app: ProtectedApp) -> NSImage {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) else {
+            return NSWorkspace.shared.icon(for: .applicationBundle)
         }
-        return NSWorkspace.shared.icon(for: .applicationBundle)
+        if let requirement = app.requirement, !CodeIdentity.bundle(at: url, satisfies: requirement) {
+            Log.ui.error("bundle claiming a protected identifier does not match its pinned identity")
+            return NSWorkspace.shared.icon(for: .applicationBundle)
+        }
+        return NSWorkspace.shared.icon(forFile: url.path)
     }
 }
 
@@ -261,6 +315,7 @@ private struct RunningAppsPicker: View {
         }
         .frame(width: 260, height: 320)
         .background(Theme.panel)
+        .background(CaptureExcluded())
         .onAppear(perform: load)
     }
 

@@ -1,9 +1,9 @@
 import AppKit
 
+@MainActor
 final class ForegroundWatcher {
     private let engine: OverlayEngine
     private let list: ProtectionList
-    private var retryTimer: Timer?
 
     init(engine: OverlayEngine, list: ProtectionList) {
         self.engine = engine
@@ -48,12 +48,14 @@ final class ForegroundWatcher {
     @objc private func appTerminated(_ notification: Notification) {
         guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
               app.processIdentifier == engine.engagedPID else { return }
-        NSLog("nyx: protected app quit while engaged")
+        Log.watcher.debug("protected app quit while engaged")
         engine.disengage()
     }
 
+    // Engaging is keyed on the process, not on any window existing yet: the
+    // engine covers whatever is on screen every frame, so restore-from-minimize
+    // and late-created windows need no separate retry poll.
     private func evaluate(_ app: NSRunningApplication?) {
-        defer { updateRetryTimer() }
         guard list.protectionEnabled,
               let app, let bundleID = app.bundleIdentifier,
               app.processIdentifier != NSRunningApplication.current.processIdentifier,
@@ -62,27 +64,15 @@ final class ForegroundWatcher {
             engine.disengage()
             return
         }
-        guard engine.engagedPID != app.processIdentifier else { return }
-        NSLog("nyx: protected app frontmost: \(bundleID)")
-        engine.engage(pid: app.processIdentifier)
-    }
-
-    // Covers restore-from-minimize and windows that appear after activation:
-    // poll only while a protected app is frontmost but nothing is engaged.
-    private func updateRetryTimer() {
-        let frontmost = NSWorkspace.shared.frontmostApplication
-        let shouldPoll = list.protectionEnabled
-            && !engine.isEngaged
-            && frontmost?.processIdentifier != NSRunningApplication.current.processIdentifier
-            && list.contains(frontmost?.bundleIdentifier)
-        if shouldPoll {
-            guard retryTimer == nil else { return }
-            retryTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-                self?.reevaluate()
-            }
-        } else {
-            retryTimer?.invalidate()
-            retryTimer = nil
+        // A mismatch still gets covered — refusing to cover would be the one
+        // failure mode that shows content. It is worth saying out loud though:
+        // the process holding this bundle identifier is not the code the user
+        // pointed Nyx at.
+        if let requirement = list.app(withBundleID: bundleID)?.requirement,
+           !CodeIdentity.process(app.processIdentifier, satisfies: requirement) {
+            Log.watcher.error("frontmost process does not match the pinned signing identity")
         }
+        Log.watcher.debug("protected app frontmost: \(bundleID, privacy: .private)")
+        engine.engage(pid: app.processIdentifier)
     }
 }

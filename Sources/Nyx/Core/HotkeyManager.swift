@@ -1,21 +1,36 @@
 import AppKit
 import Carbon.HIToolbox
 
+@MainActor
 final class HotkeyManager {
     var onHotkey: (() -> Void)?
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
 
+    // Carbon holds an unretained pointer to self; releasing without tearing
+    // the handler down would leave it dangling.
+    isolated deinit {
+        if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
+        if let eventHandlerRef { RemoveEventHandler(eventHandlerRef) }
+    }
+
     func register(_ spec: HotkeySpec) {
         unregister()
+        guard spec.isWellFormed else {
+            Log.ui.error("refusing to register a malformed hotkey")
+            return
+        }
         var eventType = EventTypeSpec(
             eventClass: OSType(kEventClassKeyboard),
             eventKind: UInt32(kEventHotKeyPressed)
         )
         InstallEventHandler(GetEventDispatcherTarget(), { _, _, userData in
             guard let userData else { return noErr }
-            let manager = Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue()
-            DispatchQueue.main.async { manager.onHotkey?() }
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue().onHotkey?()
+                }
+            }
             return noErr
         }, 1, &eventType, Unmanaged.passUnretained(self).toOpaque(), &eventHandlerRef)
 
@@ -24,9 +39,9 @@ final class HotkeyManager {
             spec.keyCode, spec.carbonModifiers, hotKeyID, GetEventDispatcherTarget(), 0, &hotKeyRef
         )
         if status == noErr {
-            NSLog("nyx: hotkey registered")
+            Log.ui.debug("hotkey registered")
         } else {
-            NSLog("nyx: hotkey registration failed (\(status))")
+            Log.ui.error("hotkey registration failed (\(status, privacy: .public))")
         }
     }
 

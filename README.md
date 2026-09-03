@@ -8,6 +8,7 @@ Requires macOS 14+ and Screen Recording permission.
 
 ```sh
 make run      # build and run from the terminal
+make test     # run the test suite
 make release  # optimized build
 make app      # assemble build/Nyx.app (tray app, bundled fonts, icon)
 make icon     # regenerate assets/AppIcon.icns from scripts/render-icon.swift
@@ -15,6 +16,14 @@ make clean    # remove build artifacts
 ```
 
 Run `./scripts/make-dev-cert.sh` once to create a self-signed "Nyx Dev" signing identity; `make app` picks it up automatically and the Screen Recording grant then survives rebuilds. Without it the bundle is ad-hoc signed and macOS invalidates the grant after every rebuild (fix a stale grant with `tccutil reset ScreenCapture tech.unravel.nyx`).
+
+The certificate is not installed as a trusted root — `codesign` accepts an untrusted leaf addressed by hash, and TCC keys the grant to the leaf either way. It is still a signing identity that grants Screen Recording to anything signed with it under `tech.unravel.nyx`, so remove it when you are done developing:
+
+```sh
+./scripts/remove-dev-cert.sh
+```
+
+`make app` signs with the hardened runtime. Debug builds (`make run`) are ad-hoc signed by SwiftPM and carry `com.apple.security.get-task-allow`; grant Screen Recording to `build/Nyx.app` rather than to a debug build.
 
 ## Use
 
@@ -26,8 +35,11 @@ Run `./scripts/make-dev-cert.sh` once to create a self-signed "Nyx Dev" signing 
 
 - macOS shows its screen-capture indicator ("Nyx — Currently Sharing") while a window is mirrored. There is no API to suppress it; the mirror is local-only and never leaves your Mac. Clicking the system "Stop Sharing" turns Nyx protection off (re-enable from the owl menu).
 
-- Frontmost window of the app only; browsers are protected as whole apps, not per-tab.
-- Notifications from a protected app are not covered.
-- Brief overlay misalignment while dragging a protected window is expected.
+- Every window the protected app owns is covered, including its menus and tooltips. Browsers are still protected as whole apps, not per-tab.
+- Notifications are drawn by the system, not by the protected app, so they are not covered.
+- The local mirror draws the protected app's windows above everything else on that display, so another app's floating panel overlapping the protected window is hidden from you (not from viewers) while protection is engaged.
+- Mission Control and Exposé shrink the real windows out from under the placeholders.
+- If Nyx cannot start its capture stream it fails closed: the placeholder stays up and you lose the local preview until the stream recovers. The menu bar icon turns red and the dashboard says "Hidden — no local preview".
+- While a protected app is frontmost Nyx costs roughly 10% of one core (a full-display capture plus a 60 Hz window resnap). It is idle otherwise.
 
 Design and build plan live in `docs/`.

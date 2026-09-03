@@ -5,13 +5,13 @@ enum Theme {
     static func registerBundledFonts() {
         guard let urls = Bundle.module.urls(forResourcesWithExtension: "ttf", subdirectory: "Fonts"),
               !urls.isEmpty else {
-            NSLog("nyx: no bundled fonts found, using system monospaced")
+            Log.ui.error("no bundled fonts found, using system monospaced")
             return
         }
         for url in urls {
             var error: Unmanaged<CFError>?
             if !CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error) {
-                NSLog("nyx: font registration failed for \(url.lastPathComponent)")
+                Log.ui.error("font registration failed for \(url.lastPathComponent, privacy: .public)")
             }
         }
     }
@@ -26,6 +26,7 @@ enum Theme {
     static let backgroundNS = NSColor(hex: 0x0E0F12)
     static let panelNS = NSColor(hex: 0x16181D)
     static let amberNS = NSColor(hex: 0xF5A623)
+    static let dangerNS = NSColor(hex: 0xE5534B)
 
     static func nsFont(_ size: CGFloat, medium: Bool = false) -> NSFont {
         let name = medium ? "JetBrainsMono-Medium" : "JetBrainsMono-Regular"

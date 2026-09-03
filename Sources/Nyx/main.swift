@@ -1,7 +1,8 @@
 import AppKit
 
-NSLog("nyx: alive")
+Log.ui.debug("alive")
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let engine = OverlayEngine()
     let list = ProtectionList()
@@ -14,13 +15,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         Theme.registerBundledFonts()
         if !CGPreflightScreenCaptureAccess() {
-            NSLog("nyx: screen recording permission missing — requesting")
+            Log.ui.error("screen recording permission missing — requesting")
             CGRequestScreenCaptureAccess()
         }
-        engine.onStateChange = { [weak self] engaged in self?.engineStateChanged(engaged) }
-        engine.onStreamFailure = { [weak self] in self?.streamFailed() }
+        engine.onStateChange = { [weak self] state in self?.engineStateChanged(state) }
+        engine.onPermissionLost = { [weak self] in self?.permissionLost() }
         engine.onUserStoppedCapture = { [weak self] in
-            NSLog("nyx: capture stopped from system UI — protection off")
+            Log.engine.error("capture stopped from system UI — protection off")
             self?.list.protectionEnabled = false
         }
         tray.onOpenDashboard = { [weak self] in self?.dashboard.show() }
@@ -33,31 +34,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         watcher.start()
         hotkeys.onHotkey = { [weak self] in self?.hotkeyToggled() }
         hotkeys.register(list.hotkey)
-        if !model.hasScreenPermission || list.apps.isEmpty {
+        if !model.hasScreenPermission || list.loadFailed || list.apps.isEmpty {
             dashboard.show()
         }
     }
 
-    private func engineStateChanged(_ engaged: Bool) {
-        model.isEngaged = engaged
-        tray.setEngaged(engaged)
-        if !engaged {
-            DispatchQueue.main.async { [weak self] in self?.watcher.reevaluate() }
-        }
+    private func engineStateChanged(_ state: ProtectionState) {
+        model.state = state
+        tray.setState(state)
     }
 
-    private func streamFailed() {
+    private func permissionLost() {
         model.refreshPermission()
-        if !model.hasScreenPermission {
-            NSLog("nyx: screen recording permission lost mid-run")
-            dashboard.show()
-        }
+        guard !model.hasScreenPermission else { return }
+        Log.engine.error("screen recording permission lost mid-run")
+        dashboard.show()
     }
 
     @objc private func screensChanged() {
-        guard engine.isEngaged else { return }
-        NSLog("nyx: screen configuration changed, disengaging")
-        engine.disengage()
+        Log.engine.debug("screen configuration changed, rebuilding the mirror")
+        engine.displaysChanged()
     }
 
     private func hotkeyToggled() {
@@ -66,12 +62,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
               app.processIdentifier != NSRunningApplication.current.processIdentifier,
               bundleID != "com.apple.finder"
         else {
-            NSLog("nyx: hotkey ignored — can't protect this app")
+            Log.ui.debug("hotkey ignored — can't protect this app")
             return
         }
         let name = app.localizedName ?? bundleID
-        let nowProtected = list.toggle(bundleID: bundleID, name: name)
-        NSLog("nyx: hotkey — \(name) \(nowProtected ? "protected" : "visible to viewers")")
+        let nowProtected = list.toggle(app)
+        Log.ui.debug("hotkey — \(name, privacy: .private) \(nowProtected ? "protected" : "visible to viewers", privacy: .public)")
     }
 
     func applicationWillTerminate(_ notification: Notification) {
