@@ -37,7 +37,7 @@ The certificate is not installed as a trusted root — `codesign` accepts an unt
 
 - Every window the protected app owns is covered, including its menus and tooltips. Browsers are still protected as whole apps, not per-tab.
 - Notifications are drawn by the system, not by the protected app, so they are not covered.
-- The local mirror draws the protected app's windows above everything else on that display, so another app's floating panel overlapping the protected window is hidden from you (not from viewers) while protection is engaged.
+- The overlay sits one level above the protected app's own windows, so the Dock, the Cmd-Tab switcher, the menu bar and menu-bar-extra menus stay visible over it. While the app has a menu or tooltip open the overlay rises to cover that too, and those system elements are hidden from you (never from viewers) until it closes.
 - Mission Control and Exposé shrink the real windows out from under the placeholders.
 - If Nyx cannot start its capture stream it fails closed: the placeholder stays up and you lose the local preview until the stream recovers. The menu bar icon turns red and the dashboard says "Hidden — no local preview".
 - While a protected app is frontmost Nyx costs roughly 10% of one core (a full-display capture plus a 60 Hz window resnap). It is idle otherwise.

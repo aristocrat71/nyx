@@ -22,7 +22,16 @@ final class MirrorLayer: NSObject {
     private var outputs: [CGDirectDisplayID: DisplayOutput] = [:]
     private var presented: [CGDirectDisplayID: CVPixelBuffer] = [:]
     private var generation = 0
+    private var level = OverlayLevel.mirror(coveringLayers: [])
     private let sampleQueue = DispatchQueue(label: "nyx.mirror.frames")
+
+    /// Assigning `level` re-orders the window, so it is touched on a change
+    /// only, not on every one of the 60 resnap ticks a second.
+    func restack(to level: NSWindow.Level) {
+        guard level != self.level else { return }
+        self.level = level
+        for window in windows.values { window.level = level }
+    }
 
     func start(pid: pid_t) {
         stop()
@@ -95,7 +104,7 @@ final class MirrorLayer: NSObject {
                 continue
             }
 
-            let window = MirrorWindow()
+            let window = MirrorWindow(level: level)
             window.show(covering: WindowIndex.appKitRect(fromCG: display.frame, primaryHeight: primaryHeight))
             windows[display.displayID] = window
             streams[display.displayID] = stream

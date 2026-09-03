@@ -101,15 +101,19 @@ struct WindowIndexTests {
 
 @Suite("Overlay levels")
 struct OverlayLevelTests {
+    private let dock = Int(CGWindowLevelForKey(.dockWindow))
+    private let screenSaver = Int(CGWindowLevelForKey(.screenSaverWindow))
+
     /// The whole of H1: a placeholder has to outrank the window it covers.
     @Test(arguments: [0, 3, 19, 20, 24, 25, 101, 102, 200, 500])
     func placeholderOutranksEveryLayerItCovers(layer: Int) {
         #expect(OverlayLevel.placeholder(coveringLayer: layer).rawValue > layer)
     }
 
-    @Test func ordinaryWindowsStayJustBelowTheDock() {
-        let dock = Int(CGWindowLevelForKey(.dockWindow))
-        #expect(OverlayLevel.placeholder(coveringLayer: 0).rawValue == dock - 1)
+    /// It must outrank it by exactly one, and no more: the levels above an
+    /// ordinary window belong to the system, not to the protected app.
+    @Test func anOrdinaryWindowIsCoveredOneLevelUp() {
+        #expect(OverlayLevel.placeholder(coveringLayer: 0).rawValue == 1)
     }
 
     @Test func menusAndTooltipsGetMatchingHighLevels() {
@@ -117,12 +121,43 @@ struct OverlayLevelTests {
         #expect(OverlayLevel.placeholder(coveringLayer: 200).rawValue == 201)
     }
 
-    /// The mirror must stay above every placeholder and below the screen saver,
-    /// so protected content is never composited over a locked screen.
-    @Test func mirrorSitsAbovePlaceholdersAndBelowTheScreenSaver() {
-        #expect(OverlayLevel.mirror < Int(CGWindowLevelForKey(.screenSaverWindow)))
-        for layer in [0, 101, 200, 1_000, Int.max / 2] {
-            #expect(OverlayLevel.placeholder(coveringLayer: layer).rawValue < OverlayLevel.mirror)
+    /// The regression this guards: the Dock, the Cmd-Tab switcher, the menu bar
+    /// and status menus all have to stay above the whole stack.
+    @Test func ordinaryWindowsLeaveTheSystemUIOnTop() {
+        let stack = [
+            OverlayLevel.placeholder(coveringLayer: 0).rawValue,
+            OverlayLevel.mirror(coveringLayers: [0, 0, 0]).rawValue,
+        ]
+        for level in stack {
+            #expect(level < dock)
+            #expect(level < Int(CGWindowLevelForKey(.mainMenuWindow)))
+            #expect(level < Int(CGWindowLevelForKey(.popUpMenuWindow)))
+            #expect(level < Int(CGWindowLevelForKey(.floatingWindow)))
         }
+    }
+
+    /// The mirror carries the live preview, so it has to clear every placeholder
+    /// under it — including the one covering the app's own open menu.
+    @Test(arguments: [[0], [0, 101], [0, 25, 200], [500], [Int.max / 2]])
+    func mirrorOutranksEveryPlaceholderBelowIt(layers: [Int]) {
+        let mirror = OverlayLevel.mirror(coveringLayers: layers).rawValue
+        for layer in layers {
+            #expect(OverlayLevel.placeholder(coveringLayer: layer).rawValue < mirror)
+        }
+    }
+
+    /// Nothing Nyx draws may reach the screen saver: protected content must
+    /// never be composited over a locked screen.
+    @Test func nothingReachesTheScreenSaver() {
+        #expect(OverlayLevel.mirror(coveringLayers: [Int.max / 2]).rawValue < screenSaver)
+        #expect(OverlayLevel.placeholder(coveringLayer: Int.max / 2).rawValue < screenSaver)
+    }
+
+    /// The resnap hits this between an app being engaged and its first window
+    /// appearing, and it must not yield a stale or out-of-range level.
+    @Test func aWindowlessAppStillYieldsASaneMirrorLevel() {
+        let mirror = OverlayLevel.mirror(coveringLayers: []).rawValue
+        #expect(mirror > OverlayLevel.placeholder(coveringLayer: 0).rawValue)
+        #expect(mirror < dock)
     }
 }
