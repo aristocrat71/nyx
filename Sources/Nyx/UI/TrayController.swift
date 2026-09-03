@@ -15,6 +15,7 @@ final class TrayController: NSObject, NSMenuDelegate {
         self.list = list
         super.init()
         let menu = NSMenu()
+        menu.autoenablesItems = false
         menu.delegate = self
         statusItem.menu = menu
         statusItem.button?.image = Self.idleImage
@@ -38,6 +39,19 @@ final class TrayController: NSObject, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         CaptureExclusion.excludeMenuWindows()
         menu.removeAllItems()
+
+        let front = FrontmostApp.protectable
+        let protectApp = NSMenuItem(
+            title: front.map { "Protect \($0.displayName)" } ?? "Protect this app",
+            action: #selector(toggleFrontmostApp),
+            keyEquivalent: ""
+        )
+        protectApp.target = self
+        protectApp.isEnabled = front != nil
+        protectApp.state = front.map { list.contains($0.bundleID) } == true ? .on : .off
+        protectApp.representedObject = front
+        menu.addItem(protectApp)
+        menu.addItem(.separator())
 
         let toggle = NSMenuItem(
             title: list.protectionEnabled ? "Protection: On" : "Protection: Off",
@@ -80,6 +94,14 @@ final class TrayController: NSObject, NSMenuDelegate {
         } catch {
             Log.ui.error("launch at login toggle failed: \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    /// The target is the one captured when the menu was built, not whatever is
+    /// frontmost by the time the click lands.
+    @objc private func toggleFrontmostApp(_ sender: NSMenuItem) {
+        guard let front = sender.representedObject as? FrontmostApp else { return }
+        let nowProtected = list.toggle(front.app)
+        Log.ui.debug("tray — \(front.displayName, privacy: .private) \(nowProtected ? "protected" : "visible to viewers", privacy: .public)")
     }
 
     @objc private func toggleProtection() {

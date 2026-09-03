@@ -99,6 +99,32 @@ struct WindowIndexTests {
     }
 }
 
+@Suite("Frontmost app menu title")
+@MainActor
+struct FrontmostAppTests {
+    @Test func anOrdinaryNameIsUsedAsIs() {
+        #expect(FrontmostApp.displayName("Discord") == "Discord")
+    }
+
+    /// localizedName comes from the other app's Info.plist, so a name that would
+    /// stretch or break the menu is cut rather than shown.
+    @Test func anOverlongNameIsTruncated() {
+        let title = FrontmostApp.displayName(String(repeating: "a", count: 200))
+        #expect(title.count <= 33)
+        #expect(title.hasSuffix("…"))
+    }
+
+    @Test func onlyTheFirstLineIsShown() {
+        #expect(FrontmostApp.displayName("Discord\nQuit Nyx") == "Discord")
+        #expect(FrontmostApp.displayName("Discord\r\nProtection: Off") == "Discord")
+    }
+
+    @Test(arguments: ["", "   ", "\n", "\n\n"])
+    func anEmptyNameFallsBackToWording(raw: String) {
+        #expect(FrontmostApp.displayName(raw) == "this app")
+    }
+}
+
 @Suite("Overlay levels")
 struct OverlayLevelTests {
     private let dock = Int(CGWindowLevelForKey(.dockWindow))

@@ -28,7 +28,7 @@ The certificate is not installed as a trusted root — `codesign` accepts an unt
 ## Use
 
 - Nyx lives in the menu bar (owl icon) — no Dock icon.
-- Add apps via the dashboard picker, or press **⌃⇧L** while using an app to toggle its protection.
+- Add apps via the dashboard picker, by pressing **⌃⇧L** while using an app, or from the owl menu's first item, which toggles protection for whatever is frontmost.
 - The protected list persists at `~/Library/Application Support/Nyx/protected.json`.
 
 ## Known limitations (v1)
