@@ -8,6 +8,7 @@ Requires macOS 14+ and Screen Recording permission.
 
 ```sh
 make run      # build and run from the terminal
+make test     # run the test suite
 make release  # optimized build
 make app      # assemble build/Nyx.app (tray app, bundled fonts, icon)
 make icon     # regenerate assets/AppIcon.icns from scripts/render-icon.swift

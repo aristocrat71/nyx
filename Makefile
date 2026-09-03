@@ -1,7 +1,21 @@
-.PHONY: run release app icon clean
+.PHONY: run release app icon test clean
 
 run:
 	swift run
+
+# With only the Command Line Tools installed, swift-testing needs its framework
+# pointed at explicitly and its Foundation cross-import overlay disabled — that
+# overlay ships without a module and fails to resolve.
+test:
+	@set -eu; \
+	fw=/Library/Developer/CommandLineTools/Library/Developer/Frameworks; \
+	if [ "$$(xcode-select -p)" = "/Library/Developer/CommandLineTools" ] && [ -d "$$fw/Testing.framework" ]; then \
+		swift test -Xswiftc -F -Xswiftc "$$fw" -Xlinker -F -Xlinker "$$fw" \
+			-Xlinker -rpath -Xlinker "$$fw" \
+			-Xswiftc -Xfrontend -Xswiftc -disable-cross-import-overlays; \
+	else \
+		swift test; \
+	fi
 
 release:
 	swift build -c release

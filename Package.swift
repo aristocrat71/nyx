@@ -11,5 +11,10 @@ let package = Package(
             resources: [.copy("Resources/Fonts")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
+        .testTarget(
+            name: "NyxTests",
+            dependencies: ["Nyx"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
     ]
 )
