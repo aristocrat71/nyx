@@ -3,7 +3,6 @@ import AppKit
 final class ForegroundWatcher {
     private let engine: OverlayEngine
     private let list: ProtectionList
-    private var retryTimer: Timer?
 
     init(engine: OverlayEngine, list: ProtectionList) {
         self.engine = engine
@@ -52,8 +51,10 @@ final class ForegroundWatcher {
         engine.disengage()
     }
 
+    // Engaging is keyed on the process, not on any window existing yet: the
+    // engine covers whatever is on screen every frame, so restore-from-minimize
+    // and late-created windows need no separate retry poll.
     private func evaluate(_ app: NSRunningApplication?) {
-        defer { updateRetryTimer() }
         guard list.protectionEnabled,
               let app, let bundleID = app.bundleIdentifier,
               app.processIdentifier != NSRunningApplication.current.processIdentifier,
@@ -62,27 +63,7 @@ final class ForegroundWatcher {
             engine.disengage()
             return
         }
-        guard engine.engagedPID != app.processIdentifier else { return }
         Log.watcher.debug("protected app frontmost: \(bundleID, privacy: .private)")
         engine.engage(pid: app.processIdentifier)
-    }
-
-    // Covers restore-from-minimize and windows that appear after activation:
-    // poll only while a protected app is frontmost but nothing is engaged.
-    private func updateRetryTimer() {
-        let frontmost = NSWorkspace.shared.frontmostApplication
-        let shouldPoll = list.protectionEnabled
-            && !engine.isEngaged
-            && frontmost?.processIdentifier != NSRunningApplication.current.processIdentifier
-            && list.contains(frontmost?.bundleIdentifier)
-        if shouldPoll {
-            guard retryTimer == nil else { return }
-            retryTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-                self?.reevaluate()
-            }
-        } else {
-            retryTimer?.invalidate()
-            retryTimer = nil
-        }
     }
 }

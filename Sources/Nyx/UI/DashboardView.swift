@@ -3,7 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 final class AppModel: ObservableObject {
-    @Published var isEngaged = false
+    @Published var state: ProtectionState = .idle
     @Published var hasScreenPermission = CGPreflightScreenCaptureAccess()
 
     func refreshPermission() {
@@ -176,21 +176,44 @@ struct DashboardView: View {
     private var statusLine: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Circle()
-                    .fill(model.isEngaged ? Theme.amber : Theme.muted.opacity(0.5))
-                    .frame(width: 6, height: 6)
-                Text(model.isEngaged ? "Protection active" : "Idle")
+                Circle().fill(statusColor).frame(width: 6, height: 6)
+                Text(statusTitle)
                     .font(Theme.font(12))
-                    .foregroundColor(model.isEngaged ? Theme.text : Theme.muted)
+                    .foregroundColor(model.state == .idle ? Theme.muted : Theme.text)
                 Spacer()
             }
-            Text("macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac.")
+            Text(statusDetail)
                 .font(Theme.font(10))
                 .foregroundColor(Theme.muted.opacity(0.7))
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
+    }
+
+    private var statusColor: Color {
+        switch model.state {
+        case .idle: Theme.muted.opacity(0.5)
+        case .active: Theme.amber
+        case .blind: Theme.danger
+        }
+    }
+
+    private var statusTitle: String {
+        switch model.state {
+        case .idle: "Idle"
+        case .active: "Protection active"
+        case .blind: "Hidden — no local preview"
+        }
+    }
+
+    private var statusDetail: String {
+        switch model.state {
+        case .blind:
+            "Viewers see the placeholder, but Nyx cannot mirror the window back to you. Retrying."
+        default:
+            "macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac."
+        }
     }
 
     private func openScreenRecordingSettings() {

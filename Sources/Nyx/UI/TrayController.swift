@@ -6,8 +6,9 @@ final class TrayController: NSObject, NSMenuDelegate {
     private let list: ProtectionList
     var onOpenDashboard: (() -> Void)?
 
-    private static let idleImage = owlImage(filled: false, dot: false)
-    private static let activeImage = owlImage(filled: true, dot: true)
+    private static let idleImage = owlImage(filled: false, dotColor: nil)
+    private static let activeImage = owlImage(filled: true, dotColor: Theme.amberNS)
+    private static let blindImage = owlImage(filled: true, dotColor: Theme.dangerNS)
 
     init(list: ProtectionList) {
         self.list = list
@@ -19,8 +20,18 @@ final class TrayController: NSObject, NSMenuDelegate {
         statusItem.button?.toolTip = "Nyx"
     }
 
-    func setEngaged(_ engaged: Bool) {
-        statusItem.button?.image = engaged ? Self.activeImage : Self.idleImage
+    func setState(_ state: ProtectionState) {
+        switch state {
+        case .idle:
+            statusItem.button?.image = Self.idleImage
+            statusItem.button?.toolTip = "Nyx — idle"
+        case .active:
+            statusItem.button?.image = Self.activeImage
+            statusItem.button?.toolTip = "Nyx — protecting this window"
+        case .blind:
+            statusItem.button?.image = Self.blindImage
+            statusItem.button?.toolTip = "Nyx — window hidden, no local preview"
+        }
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
@@ -79,9 +90,10 @@ final class TrayController: NSObject, NSMenuDelegate {
 
     @objc private func quit() { NSApp.terminate(nil) }
 
-    // Idle is a template outline; active is filled in labelColor with an amber dot
-    // (template images can't carry color, so the active variant resolves at draw time).
-    private static func owlImage(filled: Bool, dot: Bool) -> NSImage {
+    // Idle is a template outline; the engaged variants are filled in labelColor
+    // with a status dot (template images can't carry color, so those resolve at
+    // draw time): amber while mirroring, red while hidden without a preview.
+    private static func owlImage(filled: Bool, dotColor: NSColor?) -> NSImage {
         let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
             let ink: NSColor = filled ? .labelColor : .black
 
@@ -108,13 +120,13 @@ final class TrayController: NSObject, NSMenuDelegate {
                 rightEye.lineWidth = 1.1
                 rightEye.stroke()
             }
-            if dot {
-                Theme.amberNS.setFill()
+            if let dotColor {
+                dotColor.setFill()
                 NSBezierPath(ovalIn: NSRect(x: 12.5, y: 0.5, width: 5, height: 5)).fill()
             }
             return true
         }
-        image.isTemplate = !dot
+        image.isTemplate = dotColor == nil
         return image
     }
 }

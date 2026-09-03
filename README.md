@@ -34,8 +34,9 @@ The certificate is not installed as a trusted root — `codesign` accepts an unt
 
 - macOS shows its screen-capture indicator ("Nyx — Currently Sharing") while a window is mirrored. There is no API to suppress it; the mirror is local-only and never leaves your Mac. Clicking the system "Stop Sharing" turns Nyx protection off (re-enable from the owl menu).
 
-- Frontmost window of the app only; browsers are protected as whole apps, not per-tab.
-- Notifications from a protected app are not covered.
-- Brief overlay misalignment while dragging a protected window is expected.
+- Every window the protected app owns is covered, including its menus and tooltips. Browsers are still protected as whole apps, not per-tab.
+- Notifications are drawn by the system, not by the protected app, so they are not covered.
+- If Nyx cannot start its capture stream it fails closed: the placeholder stays up and you lose the local preview until the stream recovers. The menu bar icon turns red and the dashboard says "Hidden — no local preview".
+- While a protected app is frontmost Nyx costs roughly 10% of one core (a full-display capture plus a 60 Hz window resnap). It is idle otherwise.
 
 Design and build plan live in `docs/`.

@@ -17,8 +17,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Log.ui.error("screen recording permission missing — requesting")
             CGRequestScreenCaptureAccess()
         }
-        engine.onStateChange = { [weak self] engaged in self?.engineStateChanged(engaged) }
-        engine.onStreamFailure = { [weak self] in self?.streamFailed() }
+        engine.onStateChange = { [weak self] state in self?.engineStateChanged(state) }
+        engine.onPermissionLost = { [weak self] in self?.permissionLost() }
         engine.onUserStoppedCapture = { [weak self] in
             Log.engine.error("capture stopped from system UI — protection off")
             self?.list.protectionEnabled = false
@@ -38,26 +38,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func engineStateChanged(_ engaged: Bool) {
-        model.isEngaged = engaged
-        tray.setEngaged(engaged)
-        if !engaged {
-            DispatchQueue.main.async { [weak self] in self?.watcher.reevaluate() }
-        }
+    private func engineStateChanged(_ state: ProtectionState) {
+        model.state = state
+        tray.setState(state)
     }
 
-    private func streamFailed() {
+    private func permissionLost() {
         model.refreshPermission()
-        if !model.hasScreenPermission {
-            Log.engine.error("screen recording permission lost mid-run")
-            dashboard.show()
-        }
+        guard !model.hasScreenPermission else { return }
+        Log.engine.error("screen recording permission lost mid-run")
+        dashboard.show()
     }
 
     @objc private func screensChanged() {
-        guard engine.isEngaged else { return }
-        Log.engine.debug("screen configuration changed, disengaging")
-        engine.disengage()
+        Log.engine.debug("screen configuration changed, rebuilding the mirror")
+        engine.displaysChanged()
     }
 
     private func hotkeyToggled() {

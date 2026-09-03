@@ -26,6 +26,7 @@ enum Theme {
     static let backgroundNS = NSColor(hex: 0x0E0F12)
     static let panelNS = NSColor(hex: 0x16181D)
     static let amberNS = NSColor(hex: 0xF5A623)
+    static let dangerNS = NSColor(hex: 0xE5534B)
 
     static func nsFont(_ size: CGFloat, medium: Bool = false) -> NSFont {
         let name = medium ? "JetBrainsMono-Medium" : "JetBrainsMono-Regular"
