@@ -8,7 +8,7 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "Nyx",
-            resources: [.copy("Resources/Fonts")],
+            resources: [.copy("Resources/Fonts"), .copy("Resources/owl.png")],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(

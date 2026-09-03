@@ -1,6 +1,22 @@
 import AppKit
 
-let out = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "owl-1024.png"
+// Turns assets/nyx-logo.png into the two things Nyx draws it as: a
+// transparent-backed glyph the dashboard tints, and a 1024 icon canvas.
+//
+//   render-icon.swift <source.png> <glyph-out.png> <icon-out.png> <small-out.png>
+//
+// Two icon canvases, because one does not downscale to both ends of the range:
+// the owl is fine line work, and at 16pt the padding that frames it at 512
+// leaves too few pixels for the strokes to survive.
+
+let args = CommandLine.arguments
+guard args.count > 4 else {
+    FileHandle.standardError.write(Data("usage: render-icon.swift <source> <glyph> <icon> <small>\n".utf8))
+    exit(2)
+}
+let (sourcePath, glyphPath, iconPath, smallPath) = (args[1], args[2], args[3], args[4])
+
+let paper = NSColor(srgbRed: 0.98, green: 0.98, blue: 0.96, alpha: 1)
 
 func hex(_ v: UInt32) -> NSColor {
     NSColor(
@@ -11,39 +27,101 @@ func hex(_ v: UInt32) -> NSColor {
     )
 }
 
-let rep = NSBitmapImageRep(
-    bitmapDataPlanes: nil, pixelsWide: 1024, pixelsHigh: 1024,
-    bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-    colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
-)!
-NSGraphicsContext.saveGraphicsState()
-NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+func makeRep(_ width: Int, _ height: Int) -> NSBitmapImageRep {
+    NSBitmapImageRep(
+        bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
+        bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+        colorSpaceName: .deviceRGB, bytesPerRow: width * 4, bitsPerPixel: 32
+    )!
+}
 
-hex(0x0E0F12).setFill()
-NSBezierPath(roundedRect: NSRect(x: 60, y: 60, width: 904, height: 904), xRadius: 200, yRadius: 200).fill()
+func draw(into rep: NSBitmapImageRep, _ body: () -> Void) {
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+    body()
+    NSGraphicsContext.restoreGraphicsState()
+}
 
-hex(0xE8E8E8).setFill()
-NSBezierPath(ovalIn: NSRect(x: 292, y: 190, width: 440, height: 520)).fill()
-let ears = NSBezierPath()
-ears.move(to: NSPoint(x: 330, y: 620)); ears.line(to: NSPoint(x: 352, y: 800)); ears.line(to: NSPoint(x: 490, y: 685)); ears.close()
-let rightEar = NSBezierPath()
-rightEar.move(to: NSPoint(x: 694, y: 620)); rightEar.line(to: NSPoint(x: 672, y: 800)); rightEar.line(to: NSPoint(x: 534, y: 685)); rightEar.close()
-ears.fill()
-rightEar.fill()
+func write(_ rep: NSBitmapImageRep, to path: String) throws {
+    guard let data = rep.representation(using: .png, properties: [:]) else {
+        throw NSError(domain: "render-icon", code: 1)
+    }
+    try data.write(to: URL(fileURLWithPath: path))
+}
 
-hex(0xF5A623).setFill()
-NSBezierPath(ovalIn: NSRect(x: 362, y: 460, width: 130, height: 130)).fill()
-NSBezierPath(ovalIn: NSRect(x: 532, y: 460, width: 130, height: 130)).fill()
+guard let source = NSImage(contentsOfFile: sourcePath) else {
+    FileHandle.standardError.write(Data("cannot read \(sourcePath)\n".utf8))
+    exit(1)
+}
 
-hex(0x0E0F12).setFill()
-NSBezierPath(ovalIn: NSRect(x: 402, y: 500, width: 50, height: 50)).fill()
-NSBezierPath(ovalIn: NSRect(x: 572, y: 500, width: 50, height: 50)).fill()
+// The artwork is black line work printed on paper, with no alpha of its own.
+// Ink coverage is what carries the shape, so alpha is taken from how far each
+// pixel falls below the paper's luminance and the colour is discarded.
+let size = source.size
+let (width, height) = (Int(size.width.rounded()), Int(size.height.rounded()))
+let flat = makeRep(width, height)
+draw(into: flat) {
+    source.draw(in: NSRect(x: 0, y: 0, width: size.width, height: size.height))
+}
 
-let beak = NSBezierPath()
-beak.move(to: NSPoint(x: 482, y: 440)); beak.line(to: NSPoint(x: 542, y: 440)); beak.line(to: NSPoint(x: 512, y: 380)); beak.close()
-hex(0xF5A623).setFill()
-beak.fill()
+let glyph = makeRep(width, height)
+guard let input = flat.bitmapData, let output = glyph.bitmapData else { exit(1) }
+let paperLuminance = 0.2126 * 0.98 + 0.7152 * 0.98 + 0.0722 * 0.96
+// The scan's paper is not perfectly flat: it carries up to 0.023 of measured
+// ink, which survives as a faint rectangle the size of the source image. The
+// toe drops that floor. Real edges start well above it — the artwork is bimodal,
+// paper under 0.05 and strokes over 0.85 — so antialiasing is untouched.
+let toe = 0.06
 
-NSGraphicsContext.restoreGraphicsState()
-try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: out))
-print("wrote \(out)")
+for pixel in 0 ..< (width * height) {
+    let offset = pixel * 4
+    let r = Double(input[offset]) / 255
+    let g = Double(input[offset + 1]) / 255
+    let b = Double(input[offset + 2]) / 255
+    let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    let measured = (paperLuminance - luminance) / paperLuminance
+    let ink = max(0, min(1, (measured - toe) / (1 - toe)))
+    // Premultiplied, which is what NSBitmapImageRep expects by default.
+    let value = UInt8((ink * 255).rounded())
+    output[offset] = 0
+    output[offset + 1] = 0
+    output[offset + 2] = 0
+    output[offset + 3] = value
+}
+try write(glyph, to: glyphPath)
+
+// The icon keeps the logo's own paper rather than the dashboard's dark, so it
+// reads the same on the Dock as it does on the page it arrived on.
+let side = 1024
+let tintedGlyph = NSImage(size: glyph.size, flipped: false) { rect in
+    glyph.draw(in: rect)
+    return true
+}
+
+func renderIcon(inset: CGFloat, owlHeight: CGFloat, to path: String) throws {
+    let icon = makeRep(side, side)
+    let owlWidth = owlHeight * size.width / size.height
+    draw(into: icon) {
+        paper.setFill()
+        let plate = NSRect(
+            x: inset, y: inset,
+            width: CGFloat(side) - inset * 2, height: CGFloat(side) - inset * 2
+        )
+        let radius = plate.width * 0.22
+        NSBezierPath(roundedRect: plate, xRadius: radius, yRadius: radius).fill()
+
+        hex(0x101114).set()
+        tintedGlyph.draw(in: NSRect(
+            x: (CGFloat(side) - owlWidth) / 2,
+            y: (CGFloat(side) - owlHeight) / 2,
+            width: owlWidth,
+            height: owlHeight
+        ))
+    }
+    try write(icon, to: path)
+}
+
+try renderIcon(inset: 60, owlHeight: 620, to: iconPath)
+try renderIcon(inset: 16, owlHeight: 880, to: smallPath)
+
+print("wrote \(glyphPath), \(iconPath) and \(smallPath)")

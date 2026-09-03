@@ -45,6 +45,18 @@ enum Theme {
     static let controlBorder = Color(nsColor: controlBorderNS)
     static let inkOnAmber = Color(nsColor: inkOnAmberNS)
 
+    /// Drawn as a template: the artwork is one ink on paper, so keying the paper
+    /// out leaves a mask the dashboard can tint for either appearance.
+    static let owl: NSImage? = {
+        guard let url = Bundle.module.url(forResource: "owl", withExtension: "png"),
+              let image = NSImage(contentsOf: url) else {
+            Log.ui.error("bundled owl artwork missing")
+            return nil
+        }
+        image.isTemplate = true
+        return image
+    }()
+
     static func nsFont(_ size: CGFloat, medium: Bool = false) -> NSFont {
         let name = medium ? "JetBrainsMono-Medium" : "JetBrainsMono-Regular"
         return NSFont(name: name, size: size)

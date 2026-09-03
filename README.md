@@ -11,7 +11,7 @@ make run      # build and run from the terminal
 make test     # run the test suite
 make release  # optimized build
 make app      # assemble build/Nyx.app (tray app, bundled fonts, icon)
-make icon     # regenerate assets/AppIcon.icns from scripts/render-icon.swift
+make icon     # rebuild the app icon and the dashboard glyph from assets/nyx-logo.png
 make clean    # remove build artifacts
 ```
 

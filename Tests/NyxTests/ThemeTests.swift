@@ -3,6 +3,31 @@ import CoreText
 import Testing
 @testable import Nyx
 
+@Suite("Bundled assets")
+@MainActor
+struct BundledAssetTests {
+    /// A resource that fails to reach the bundle leaves the header with no
+    /// logo and nothing else to show for it.
+    @Test func theOwlArtworkLoadsAsATemplate() throws {
+        let owl = try #require(Theme.owl)
+        #expect(owl.isTemplate)
+        #expect(owl.size.width > 0 && owl.size.height > 0)
+    }
+
+    /// Keyed off the paper it was drawn on: if the background survived, the
+    /// corners would be opaque and the logo would be a box on a dark dashboard.
+    @Test func theArtworkBackgroundIsTransparent() throws {
+        let owl = try #require(Theme.owl)
+        let data = try #require(owl.tiffRepresentation)
+        let rep = try #require(NSBitmapImageRep(data: data))
+        for x in [0, rep.pixelsWide - 1] {
+            for y in [0, rep.pixelsHigh - 1] {
+                #expect(try #require(rep.colorAt(x: x, y: y)).alphaComponent == 0)
+            }
+        }
+    }
+}
+
 @Suite("Bundled font coverage")
 @MainActor
 struct FontCoverageTests {

@@ -102,6 +102,14 @@ struct DashboardView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
+            if let owl = Theme.owl {
+                Image(nsImage: owl)
+                    .resizable()
+                    .renderingMode(.template)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 22)
+                    .foregroundColor(Theme.text)
+            }
             Text("Nyx").font(Theme.font(14, medium: true)).foregroundColor(Theme.text)
             Spacer()
             Text("⌃⇧L").font(Theme.font(12)).foregroundColor(Theme.muted)
@@ -177,6 +185,14 @@ struct DashboardView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Spacer()
+            if let owl = Theme.owl {
+                Image(nsImage: owl)
+                    .resizable()
+                    .renderingMode(.template)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 72)
+                    .foregroundColor(Theme.muted.opacity(0.35))
+            }
             Text("Nothing protected yet.\nAdd an app, or press ⌃⇧L while using one.")
                 .font(Theme.font(12))
                 .foregroundColor(Theme.muted)
@@ -275,9 +291,17 @@ private struct AppRow: View {
             Text(app.name).font(Theme.font(13)).foregroundColor(Theme.text)
             Spacer()
             Button(action: onRemove) {
-                Text("✕")
-                    .font(Theme.font(12))
+                Text("Remove")
+                    .font(Theme.font(10, medium: true))
                     .foregroundColor(hovering ? Theme.text : Theme.muted)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(hovering ? Theme.control : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .strokeBorder(Theme.controlBorder, lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
             }
             .buttonStyle(.plain)
             .help("Stop protecting \(app.name)")
