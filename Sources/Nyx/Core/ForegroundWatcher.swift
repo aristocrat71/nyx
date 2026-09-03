@@ -63,6 +63,14 @@ final class ForegroundWatcher {
             engine.disengage()
             return
         }
+        // A mismatch still gets covered — refusing to cover would be the one
+        // failure mode that shows content. It is worth saying out loud though:
+        // the process holding this bundle identifier is not the code the user
+        // pointed Nyx at.
+        if let requirement = list.app(withBundleID: bundleID)?.requirement,
+           !CodeIdentity.process(app.processIdentifier, satisfies: requirement) {
+            Log.watcher.error("frontmost process does not match the pinned signing identity")
+        }
         Log.watcher.debug("protected app frontmost: \(bundleID, privacy: .private)")
         engine.engage(pid: app.processIdentifier)
     }

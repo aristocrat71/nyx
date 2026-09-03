@@ -65,7 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let name = app.localizedName ?? bundleID
-        let nowProtected = list.toggle(bundleID: bundleID, name: name)
+        let nowProtected = list.toggle(app)
         Log.ui.debug("hotkey — \(name, privacy: .private) \(nowProtected ? "protected" : "visible to viewers", privacy: .public)")
     }
 

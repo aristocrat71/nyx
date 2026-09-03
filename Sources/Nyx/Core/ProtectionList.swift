@@ -5,12 +5,19 @@ import Combine
 struct ProtectedApp: Codable, Equatable, Identifiable {
     let bundleID: String
     let name: String
+    /// Designated requirement captured when the app was added. Absent for
+    /// entries written before pinning existed, and for unsigned apps.
+    var requirement: String?
     var id: String { bundleID }
 
     static let maxNameLength = 128
 
+    static let maxRequirementLength = 2048
+
     var isWellFormed: Bool {
-        guard !bundleID.isEmpty, bundleID.count <= 255, name.count <= Self.maxNameLength else { return false }
+        guard !bundleID.isEmpty, bundleID.count <= 255, name.count <= Self.maxNameLength,
+              (requirement?.count ?? 0) <= Self.maxRequirementLength
+        else { return false }
         return bundleID.unicodeScalars.allSatisfy(Self.bundleIDScalars.contains)
     }
 
@@ -83,11 +90,19 @@ final class ProtectionList: ObservableObject {
         return apps.contains { $0.bundleID == bundleID }
     }
 
-    func add(bundleID: String, name: String) {
-        let app = ProtectedApp(bundleID: bundleID, name: String(name.prefix(ProtectedApp.maxNameLength)))
+    func add(bundleID: String, name: String, requirement: String? = nil) {
+        let app = ProtectedApp(
+            bundleID: bundleID,
+            name: String(name.prefix(ProtectedApp.maxNameLength)),
+            requirement: requirement
+        )
         guard !contains(bundleID), app.isWellFormed, apps.count < Self.maxApps else { return }
         apps.append(app)
         persistAndNotify()
+    }
+
+    func app(withBundleID bundleID: String) -> ProtectedApp? {
+        apps.first { $0.bundleID == bundleID }
     }
 
     func remove(bundleID: String) {
@@ -97,13 +112,49 @@ final class ProtectionList: ObservableObject {
 
     /// Returns true if the app is protected after the toggle.
     @discardableResult
-    func toggle(bundleID: String, name: String) -> Bool {
+    func toggle(_ app: NSRunningApplication) -> Bool {
+        guard let bundleID = app.bundleIdentifier else { return false }
         if contains(bundleID) {
             remove(bundleID: bundleID)
             return false
         }
-        add(bundleID: bundleID, name: name)
+        add(app)
         return contains(bundleID)
+    }
+
+    func add(_ app: NSRunningApplication) {
+        guard let bundleID = app.bundleIdentifier else { return }
+        add(
+            bundleID: bundleID,
+            name: app.localizedName ?? bundleID,
+            requirement: app.bundleURL.flatMap(CodeIdentity.designatedRequirement(ofBundleAt:))
+        )
+    }
+
+    struct Loaded: Equatable {
+        var apps: [ProtectedApp] = []
+        var hotkey = ProtectionList.defaultHotkey
+        var droppedApps = 0
+        var rejectedHotkey = false
+        var failed = false
+    }
+
+    /// Everything a hostile or corrupt file can influence, in one pure function
+    /// so it can be tested without touching Application Support.
+    static func decode(_ data: Data) -> Loaded {
+        guard let store = try? JSONDecoder().decode(Store.self, from: data) else {
+            return Loaded(failed: true)
+        }
+        var result = Loaded()
+        result.apps = Array(store.apps.filter(\.isWellFormed).prefix(maxApps))
+        result.droppedApps = store.apps.count - result.apps.count
+        if let stored = store.hotkey {
+            if stored.isWellFormed { result.hotkey = stored } else { result.rejectedHotkey = true }
+        }
+        // A stored "off" is deliberately not read back: turning protection off
+        // should take an action in this session, not a file that any same-user
+        // process can rewrite while Nyx is not running.
+        return result
     }
 
     private func load() {
@@ -113,28 +164,19 @@ final class ProtectionList: ObservableObject {
             Log.store.debug("no protected.json yet, starting empty")
             return
         }
-        let store: Store
-        do {
-            store = try JSONDecoder().decode(Store.self, from: data)
-        } catch {
-            Log.store.error("failed to decode protected.json: \(error.localizedDescription, privacy: .private)")
+        let result = Self.decode(data)
+        guard !result.failed else {
+            Log.store.error("failed to decode protected.json")
             loadFailed = true
             return
         }
-        apps = Array(store.apps.filter(\.isWellFormed).prefix(Self.maxApps))
-        if store.apps.count != apps.count {
-            Log.store.error("dropped \(store.apps.count - self.apps.count, privacy: .public) malformed entries")
+        apps = result.apps
+        hotkey = result.hotkey
+        if result.droppedApps > 0 {
+            Log.store.error("dropped \(result.droppedApps, privacy: .public) malformed entries")
         }
-        if let stored = store.hotkey, stored.isWellFormed {
-            hotkey = stored
-        } else if store.hotkey != nil {
+        if result.rejectedHotkey {
             Log.store.error("stored hotkey rejected, keeping the default")
-        }
-        // A stored "off" is deliberately not honoured: turning protection off
-        // should take an action in this session, not a file that any same-user
-        // process can rewrite while Nyx is not running.
-        if store.protectionEnabled == false {
-            Log.store.debug("ignoring persisted protectionEnabled=false")
         }
     }
 

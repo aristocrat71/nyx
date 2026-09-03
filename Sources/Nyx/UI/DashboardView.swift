@@ -176,9 +176,7 @@ struct DashboardView: View {
         .buttonStyle(.plain)
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
             RunningAppsPicker(alreadyProtected: Set(list.apps.map(\.bundleID))) { app in
-                if let bundleID = app.bundleIdentifier {
-                    list.add(bundleID: bundleID, name: app.localizedName ?? bundleID)
-                }
+                list.add(app)
                 showingPicker = false
             }
         }
@@ -240,7 +238,7 @@ private struct AppRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(nsImage: Self.icon(for: app.bundleID))
+            Image(nsImage: AppIcons.icon(for: app))
                 .resizable()
                 .frame(width: 20, height: 20)
             Text(app.name).font(Theme.font(13)).foregroundColor(Theme.text)
@@ -258,11 +256,31 @@ private struct AppRow: View {
         .onHover { hovering = $0 }
     }
 
-    static func icon(for bundleID: String) -> NSImage {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-            return NSWorkspace.shared.icon(forFile: url.path)
+}
+
+/// LaunchServices resolves a bundle identifier to whichever bundle currently
+/// claims it, so an app that squats a protected identifier could put its own
+/// artwork in this list. Icons are only taken from a bundle that satisfies the
+/// identity pinned when the app was added.
+private enum AppIcons {
+    private static var cache: [String: NSImage] = [:]
+
+    static func icon(for app: ProtectedApp) -> NSImage {
+        if let cached = cache[app.bundleID] { return cached }
+        let image = resolve(app)
+        cache[app.bundleID] = image
+        return image
+    }
+
+    private static func resolve(_ app: ProtectedApp) -> NSImage {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) else {
+            return NSWorkspace.shared.icon(for: .applicationBundle)
         }
-        return NSWorkspace.shared.icon(for: .applicationBundle)
+        if let requirement = app.requirement, !CodeIdentity.bundle(at: url, satisfies: requirement) {
+            Log.ui.error("bundle claiming a protected identifier does not match its pinned identity")
+            return NSWorkspace.shared.icon(for: .applicationBundle)
+        }
+        return NSWorkspace.shared.icon(forFile: url.path)
     }
 }
 
