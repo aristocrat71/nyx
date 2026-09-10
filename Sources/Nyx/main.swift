@@ -8,7 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let list = ProtectionList()
     let hotkeys = HotkeyManager()
     let model = AppModel()
-    lazy var watcher = ForegroundWatcher(engine: engine, list: list)
+    let capture = CaptureWatcher()
+    lazy var watcher = ForegroundWatcher(engine: engine, list: list, capture: capture)
     lazy var tray = TrayController(list: list)
     lazy var dashboard = DashboardWindowController(list: list, model: model)
 
@@ -31,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSApplication.didChangeScreenParametersNotification,
             object: nil
         )
+        capture.start()
         watcher.start()
         hotkeys.onHotkey = { [weak self] in self?.hotkeyToggled() }
         hotkeys.register(list.hotkey)

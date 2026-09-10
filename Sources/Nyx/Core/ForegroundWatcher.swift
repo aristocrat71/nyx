@@ -4,10 +4,12 @@ import AppKit
 final class ForegroundWatcher {
     private let engine: OverlayEngine
     private let list: ProtectionList
+    private let capture: CaptureWatcher
 
-    init(engine: OverlayEngine, list: ProtectionList) {
+    init(engine: OverlayEngine, list: ProtectionList, capture: CaptureWatcher) {
         self.engine = engine
         self.list = list
+        self.capture = capture
     }
 
     func start() {
@@ -29,6 +31,7 @@ final class ForegroundWatcher {
             name: ProtectionList.changed,
             object: nil
         )
+        capture.onChange = { [weak self] _ in self?.reevaluate() }
         evaluate(NSWorkspace.shared.frontmostApplication)
     }
 
@@ -56,7 +59,9 @@ final class ForegroundWatcher {
     // engine covers whatever is on screen every frame, so restore-from-minimize
     // and late-created windows need no separate retry poll.
     private func evaluate(_ app: NSRunningApplication?) {
-        guard list.protectionEnabled,
+        // A mirror nobody is watching only lights the sharing indicator, so
+        // nothing engages until some other process is capturing.
+        guard list.protectionEnabled, capture.isCapturing,
               let app, let bundleID = app.bundleIdentifier,
               app.processIdentifier != NSRunningApplication.current.processIdentifier,
               list.contains(bundleID)

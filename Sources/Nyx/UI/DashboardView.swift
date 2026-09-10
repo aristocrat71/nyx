@@ -370,7 +370,7 @@ struct SettingsPopover: View {
                 Image(systemName: "info.circle")
                     .font(.system(size: 11))
                     .foregroundColor(Theme.muted)
-                Text("macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac.")
+                Text("macOS shows a screen-sharing indicator while Nyx mirrors a window, which only happens during a share. The mirror never leaves your Mac.")
                     .font(Theme.font(11))
                     .foregroundColor(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)

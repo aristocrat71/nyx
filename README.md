@@ -1,6 +1,6 @@
 # Nyx
 
-Screen-share privacy for macOS. Share your entire screen; when you switch to a protected app, you see and use it normally while viewers see a black "Nyx is protecting this window" placeholder.
+Screen-share privacy for macOS. Share your entire screen; when you switch to a protected app during a share, you see and use it normally while viewers see a black "Nyx is protecting this window" placeholder. With nothing capturing your screen, Nyx stays out of the way.
 
 Requires macOS 14+ and Screen Recording permission.
 
@@ -33,13 +33,14 @@ The certificate is not installed as a trusted root — `codesign` accepts an unt
 
 ## Known limitations (v1)
 
-- macOS shows its screen-capture indicator ("Nyx — Currently Sharing") while a window is mirrored. There is no API to suppress it; the mirror is local-only and never leaves your Mac. Clicking the system "Stop Sharing" turns Nyx protection off (re-enable from the owl menu).
+- macOS shows its screen-capture indicator ("Nyx — Currently Sharing") while a window is mirrored, which only happens while something else is already capturing the screen. There is no API to suppress it; the mirror is local-only and never leaves your Mac. Clicking the system "Stop Sharing" turns Nyx protection off (re-enable from the owl menu).
+- Nyx notices a share a moment after it starts, not before. A protected app that is already frontmost when the share begins is covered about half a second in, as soon as the capture is running. Once engaged, Nyx stays engaged until you switch apps even if the share ended earlier: it cannot tell the share's capture apart from its own mirror.
 
 - Every window the protected app owns is covered, including its menus and tooltips. Browsers are still protected as whole apps, not per-tab.
 - Notifications are drawn by the system, not by the protected app, so they are not covered.
 - The overlay sits one level above the protected app's own windows, so the Dock, the Cmd-Tab switcher, the menu bar and menu-bar-extra menus stay visible over it. While the app has a menu or tooltip open the overlay rises to cover that too, and those system elements are hidden from you (never from viewers) until it closes.
 - Mission Control and Exposé shrink the real windows out from under the placeholders.
 - If Nyx cannot start its capture stream it fails closed: the placeholder stays up and you lose the local preview until the stream recovers. The menu bar icon turns red and the dashboard says "Hidden — no local preview".
-- While a protected app is frontmost Nyx costs roughly 10% of one core (a full-display capture plus a 60 Hz window resnap). It is idle otherwise.
+- While a protected app is frontmost during a share Nyx costs roughly 10% of one core (a full-display capture plus a 60 Hz window resnap). It is idle otherwise.
 
 Design and build plan live in `docs/`.
