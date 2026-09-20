@@ -9,6 +9,7 @@ final class AppModel: ObservableObject {
 
     @Published var state: ProtectionState = .idle
     @Published var hasScreenPermission = CGPreflightScreenCaptureAccess()
+    @Published var hasAccessibilityPermission = BrowserTabReader.isTrusted
     /// Starts on whatever the Mac is set to, then follows the settings picker.
     /// Read from the global default rather than NSApp, which is nil until the
     /// application object exists.
@@ -23,6 +24,8 @@ final class AppModel: ObservableObject {
     func refreshPermission() {
         let granted = CGPreflightScreenCaptureAccess()
         if granted != hasScreenPermission { hasScreenPermission = granted }
+        let trusted = BrowserTabReader.isTrusted
+        if trusted != hasAccessibilityPermission { hasAccessibilityPermission = trusted }
     }
 }
 
@@ -84,12 +87,14 @@ struct DashboardView: View {
     @ObservedObject var model: AppModel
     @State private var showingPicker = false
     @State private var showingSettings = false
+    @State private var siteField = ""
 
     var body: some View {
         VStack(spacing: 0) {
             header
             divider
             if !model.hasScreenPermission { permissionBanner }
+            if !list.sites.isEmpty && !model.hasAccessibilityPermission { accessibilityBanner }
             if list.loadFailed { loadFailureBanner }
             appsSection
             divider
@@ -187,6 +192,28 @@ struct DashboardView: View {
         .background(Theme.amber.opacity(0.12))
     }
 
+    private var accessibilityBanner: some View {
+        HStack(spacing: 10) {
+            Text("Nyx needs Accessibility to read the browser's address bar")
+                .font(Theme.font(11))
+                .foregroundColor(Theme.amberText)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+            Button(action: openAccessibilitySettings) {
+                Text("Open Settings")
+                    .font(Theme.font(11, medium: true))
+                    .foregroundColor(Theme.inkOnAmber)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Theme.amber)
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(12)
+        .background(Theme.amber.opacity(0.12))
+    }
+
     private var loadFailureBanner: some View {
         Text("Nyx could not read your saved list — nothing is protected until you add an app again. The file is at ~/Library/Application Support/Nyx/protected.json.")
             .font(Theme.font(11))
@@ -199,21 +226,21 @@ struct DashboardView: View {
 
     private var appsSection: some View {
         Group {
-            if list.apps.isEmpty {
+            if list.apps.isEmpty && list.sites.isEmpty {
                 emptyState
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("PROTECTED APPS")
-                            .font(Theme.font(11, medium: true))
-                            .foregroundColor(Theme.muted)
-                            .padding(.horizontal, 16)
-                            .padding(.top, 16)
-                            .padding(.bottom, 8)
+                        sectionLabel("PROTECTED APPS").padding(.top, 16)
                         ForEach(list.apps) { app in
                             AppRow(app: app) { list.remove(bundleID: app.bundleID) }
                         }
                         addButton.padding(.top, 8)
+                        sectionLabel("PROTECTED SITES").padding(.top, 22)
+                        ForEach(list.sites) { site in
+                            SiteRow(site: site) { list.removeSite(host: site.host) }
+                        }
+                        siteEntry
                     }
                 }
             }
@@ -221,6 +248,48 @@ struct DashboardView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .disabled(!model.hasScreenPermission)
         .opacity(model.hasScreenPermission ? 1 : 0.4)
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(Theme.font(11, medium: true))
+            .foregroundColor(Theme.muted)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+    }
+
+    private var siteEntry: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            siteInputRow
+            if !siteField.isEmpty && ProtectedSite.normalize(siteField) == nil {
+                Text("Enter a host like youtube.com, or paste a page address.")
+                    .font(Theme.font(10))
+                    .foregroundColor(Theme.muted)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+    }
+
+    private var siteInputRow: some View {
+        HStack(spacing: 8) {
+            TextField("youtube.com", text: $siteField)
+                .textFieldStyle(.plain)
+                .font(Theme.font(12))
+                .foregroundColor(Theme.text)
+                .onSubmit(commitSite)
+                .padding(.horizontal, 9)
+                .frame(height: 26)
+                .background(Theme.control)
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.controlBorder, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            Button(action: commitSite) {
+                Text("Add").pill()
+            }
+            .buttonStyle(.plain)
+            .disabled(ProtectedSite.normalize(siteField) == nil)
+        }
     }
 
     private var emptyState: some View {
@@ -240,6 +309,11 @@ struct DashboardView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
             addButton
+            Text("Or cover a site whenever it is your front tab.")
+                .font(Theme.font(11))
+                .foregroundColor(Theme.muted)
+                .padding(.top, 6)
+            siteEntry
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -309,6 +383,18 @@ struct DashboardView: View {
     private func openScreenRecordingSettings() {
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!
         NSWorkspace.shared.open(url)
+    }
+
+    private func openAccessibilitySettings() {
+        BrowserTabReader.requestTrust()
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
+        NSWorkspace.shared.open(url)
+    }
+
+    private func commitSite() {
+        guard list.addSite(siteField) != nil else { return }
+        siteField = ""
+        if !model.hasAccessibilityPermission { BrowserTabReader.requestTrust() }
     }
 }
 
@@ -394,6 +480,38 @@ private extension View {
             .background(Theme.control)
             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.controlBorder, lineWidth: 1))
             .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+}
+
+private struct SiteRow: View {
+    let site: ProtectedSite
+    let onRemove: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(site.host).font(Theme.font(13)).foregroundColor(Theme.text)
+            Spacer()
+            Button(action: onRemove) {
+                Text("Remove")
+                    .font(Theme.font(10, medium: true))
+                    .foregroundColor(hovering ? Theme.text : Theme.muted)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(hovering ? Theme.control : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .strokeBorder(Theme.controlBorder, lineWidth: 1)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+            }
+            .buttonStyle(.plain)
+            .help("Stop covering \(site.host)")
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 32)
+        .background(hovering ? Theme.rowHighlight : Color.clear)
+        .onHover { hovering = $0 }
     }
 }
 

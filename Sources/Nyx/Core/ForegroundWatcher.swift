@@ -5,6 +5,7 @@ final class ForegroundWatcher {
     private let engine: OverlayEngine
     private let list: ProtectionList
     private let capture: CaptureWatcher
+    private let tabs = TabWatcher()
 
     init(engine: OverlayEngine, list: ProtectionList, capture: CaptureWatcher) {
         self.engine = engine
@@ -32,6 +33,7 @@ final class ForegroundWatcher {
             object: nil
         )
         capture.onChange = { [weak self] _ in self?.reevaluate() }
+        tabs.onChange = { [weak self] in self?.reevaluate() }
         evaluate(NSWorkspace.shared.frontmostApplication)
     }
 
@@ -49,8 +51,10 @@ final class ForegroundWatcher {
     }
 
     @objc private func appTerminated(_ notification: Notification) {
-        guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-              app.processIdentifier == engine.engagedPID else { return }
+        guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+        else { return }
+        if app.processIdentifier == tabs.watchedPID { tabs.stop() }
+        guard app.processIdentifier == engine.engagedPID else { return }
         Log.watcher.debug("protected app quit while engaged")
         engine.disengage()
     }
@@ -63,9 +67,15 @@ final class ForegroundWatcher {
         // nothing engages until some other process is capturing.
         guard list.protectionEnabled, capture.isCapturing,
               let app, let bundleID = app.bundleIdentifier,
-              app.processIdentifier != NSRunningApplication.current.processIdentifier,
-              list.contains(bundleID)
+              app.processIdentifier != NSRunningApplication.current.processIdentifier
         else {
+            tabs.stop()
+            engine.disengage()
+            return
+        }
+        let appProtected = list.contains(bundleID)
+        updateTabWatch(app, bundleID: bundleID, needed: !appProtected)
+        guard appProtected || frontTabIsProtected() else {
             engine.disengage()
             return
         }
@@ -79,5 +89,31 @@ final class ForegroundWatcher {
         }
         Log.watcher.debug("protected app frontmost: \(bundleID, privacy: .private)")
         engine.engage(pid: app.processIdentifier)
+    }
+}
+
+extension ForegroundWatcher {
+    /// Site rules only ever apply to a browser, and only while one is frontmost,
+    /// so Nyx never reads the address bar in the background.
+    private func updateTabWatch(_ app: NSRunningApplication, bundleID: String, needed: Bool) {
+        guard needed, !list.sites.isEmpty, Browsers.isBrowser(bundleID) else {
+            tabs.stop()
+            return
+        }
+        tabs.watch(pid: app.processIdentifier)
+    }
+
+    private func frontTabIsProtected() -> Bool {
+        guard let tab = tabs.currentTab() else { return false }
+        if let host = tab.host {
+            guard let site = list.sites.match(host: host) else { return false }
+            Log.watcher.debug("front tab matches \(site.host, privacy: .private)")
+            return true
+        }
+        // A browser that publishes no address leaves the window title as the
+        // only signal there is.
+        guard let title = tab.title, let site = list.sites.match(title: title) else { return false }
+        Log.watcher.debug("front window title matches \(site.host, privacy: .private)")
+        return true
     }
 }

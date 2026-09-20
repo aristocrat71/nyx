@@ -99,6 +99,32 @@ struct ProtectionListDecodingTests {
         let result = decode(#"{"apps":[{"bundleID":"com.ok.app","name":"n","requirement":"\#(long)"}]}"#)
         #expect(result.apps.isEmpty)
     }
+
+    /// Files written before site rules existed carry no "sites" key at all.
+    @Test func aFileWithoutSitesStillLoads() {
+        let result = decode(#"{"apps":[{"bundleID":"com.apple.TextEdit","name":"TextEdit"}]}"#)
+        #expect(!result.failed)
+        #expect(result.sites.isEmpty)
+        #expect(result.droppedSites == 0)
+    }
+
+    @Test func sitesRoundTripAndMalformedOnesAreDropped() {
+        let result = decode("""
+        {"apps":[],"sites":[{"host":"youtube.com"},{"host":"news.ycombinator.com"},
+                            {"host":"UPPER.com"},{"host":"localhost"},{"host":""},
+                            {"host":"a b.com"},{"host":"you/tube.com"},{"host":".com"}]}
+        """)
+        #expect(!result.failed)
+        #expect(result.sites.map(\.host) == ["youtube.com", "news.ycombinator.com"])
+        #expect(result.droppedSites == 6)
+    }
+
+    @Test func siteCountIsCapped() {
+        let entries = (0..<500).map { #"{"host":"n\#($0).example.com"}"# }.joined(separator: ",")
+        let result = decode(#"{"apps":[],"sites":[\#(entries)]}"#)
+        #expect(result.sites.count == 200)
+        #expect(result.droppedSites == 300)
+    }
 }
 
 @Suite("Code identity pinning")
