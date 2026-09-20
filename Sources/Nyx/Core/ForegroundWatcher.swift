@@ -110,7 +110,8 @@ extension ForegroundWatcher {
             Log.watcher.debug("front tab matches \(site.host, privacy: .private)")
             return true
         }
-        // No URL means Firefox, where the window title is the only signal there is.
+        // A browser that publishes no address leaves the window title as the
+        // only signal there is.
         guard let title = tab.title, let site = list.sites.match(title: title) else { return false }
         Log.watcher.debug("front window title matches \(site.host, privacy: .private)")
         return true

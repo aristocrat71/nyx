@@ -88,7 +88,6 @@ struct DashboardView: View {
     @State private var showingPicker = false
     @State private var showingSettings = false
     @State private var siteField = ""
-    @FocusState private var siteFieldFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -260,12 +259,25 @@ struct DashboardView: View {
     }
 
     private var siteEntry: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            siteInputRow
+            if !siteField.isEmpty && ProtectedSite.normalize(siteField) == nil {
+                Text("Enter a host like youtube.com, or paste a page address.")
+                    .font(Theme.font(10))
+                    .foregroundColor(Theme.muted)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+    }
+
+    private var siteInputRow: some View {
         HStack(spacing: 8) {
             TextField("youtube.com", text: $siteField)
                 .textFieldStyle(.plain)
                 .font(Theme.font(12))
                 .foregroundColor(Theme.text)
-                .focused($siteFieldFocused)
                 .onSubmit(commitSite)
                 .padding(.horizontal, 9)
                 .frame(height: 26)
@@ -278,9 +290,6 @@ struct DashboardView: View {
             .buttonStyle(.plain)
             .disabled(ProtectedSite.normalize(siteField) == nil)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
-        .padding(.bottom, 4)
     }
 
     private var emptyState: some View {
