@@ -40,7 +40,7 @@ class OverlayWindow: NSWindow {
 
 final class PlaceholderWindow: OverlayWindow {
     private static let minimumLabelSize = CGSize(width: 320, height: 160)
-    private static let creditMarkHeight: CGFloat = 15
+    private static let creditMarkHeight: CGFloat = 19
     private let caption = NSStackView()
 
     init() {
@@ -81,7 +81,7 @@ final class PlaceholderWindow: OverlayWindow {
         row.alignment = .centerY
         row.spacing = 7
         let label = NSTextField(labelWithString: "Developed by")
-        label.font = Theme.nsFont(13)
+        label.font = Theme.nsFont(16)
         label.textColor = NSColor.white.withAlphaComponent(0.55)
         row.addArrangedSubview(label)
         guard let unravel = Theme.unravel else { return row }
