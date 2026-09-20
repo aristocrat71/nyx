@@ -49,8 +49,10 @@ struct HotkeySpec: Codable, Equatable {
 final class ProtectionList: ObservableObject {
     static let changed = Notification.Name("nyx.protectionList.changed")
     private nonisolated static let maxApps = 200
+    private nonisolated static let maxSites = 200
 
     @Published private(set) var apps: [ProtectedApp] = []
+    @Published private(set) var sites: [ProtectedSite] = []
     @Published var protectionEnabled: Bool = true {
         didSet { if !isLoading { persistAndNotify() } }
     }
@@ -64,6 +66,8 @@ final class ProtectionList: ObservableObject {
 
     private struct Store: Codable {
         var apps: [ProtectedApp]
+        /// Optional so a file written before site rules existed still decodes.
+        var sites: [ProtectedSite]?
         var hotkey: HotkeySpec?
         var protectionEnabled: Bool?
     }
@@ -108,6 +112,26 @@ final class ProtectionList: ObservableObject {
         apps.first { $0.bundleID == bundleID }
     }
 
+    func containsSite(_ host: String) -> Bool {
+        sites.contains { $0.host == host }
+    }
+
+    /// Returns the stored form on success, so the field can show what it kept.
+    @discardableResult
+    func addSite(_ raw: String) -> String? {
+        guard let host = ProtectedSite.normalize(raw), !containsSite(host), sites.count < Self.maxSites
+        else { return nil }
+        sites.append(ProtectedSite(host: host))
+        sites.sort { $0.host < $1.host }
+        persistAndNotify()
+        return host
+    }
+
+    func removeSite(host: String) {
+        sites.removeAll { $0.host == host }
+        persistAndNotify()
+    }
+
     func remove(bundleID: String) {
         apps.removeAll { $0.bundleID == bundleID }
         persistAndNotify()
@@ -140,8 +164,10 @@ final class ProtectionList: ObservableObject {
 
     struct Loaded: Equatable {
         var apps: [ProtectedApp] = []
+        var sites: [ProtectedSite] = []
         var hotkey = HotkeySpec.standard
         var droppedApps = 0
+        var droppedSites = 0
         var rejectedHotkey = false
         var failed = false
     }
@@ -155,6 +181,9 @@ final class ProtectionList: ObservableObject {
         var result = Loaded()
         result.apps = Array(store.apps.filter(\.isWellFormed).prefix(maxApps))
         result.droppedApps = store.apps.count - result.apps.count
+        let sites = store.sites ?? []
+        result.sites = Array(sites.filter(\.isWellFormed).prefix(maxSites))
+        result.droppedSites = sites.count - result.sites.count
         if let stored = store.hotkey {
             if stored.isWellFormed { result.hotkey = stored } else { result.rejectedHotkey = true }
         }
@@ -178,9 +207,13 @@ final class ProtectionList: ObservableObject {
             return
         }
         apps = result.apps
+        sites = result.sites
         hotkey = result.hotkey
         if result.droppedApps > 0 {
             Log.store.error("dropped \(result.droppedApps, privacy: .public) malformed entries")
+        }
+        if result.droppedSites > 0 {
+            Log.store.error("dropped \(result.droppedSites, privacy: .public) malformed site entries")
         }
         if result.rejectedHotkey {
             Log.store.error("stored hotkey rejected, keeping the default")
@@ -193,7 +226,7 @@ final class ProtectionList: ObservableObject {
     }
 
     private func save() {
-        let store = Store(apps: apps, hotkey: hotkey, protectionEnabled: protectionEnabled)
+        let store = Store(apps: apps, sites: sites, hotkey: hotkey, protectionEnabled: protectionEnabled)
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

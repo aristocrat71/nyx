@@ -2,7 +2,7 @@
 
 Screen-share privacy for macOS. Share your entire screen; when you switch to a protected app during a share, you see and use it normally while viewers see a black "Nyx is protecting this window" placeholder. With nothing capturing your screen, Nyx stays out of the way.
 
-Requires macOS 14+ and Screen Recording permission.
+Requires macOS 14+ and Screen Recording permission. Site rules additionally need Accessibility permission.
 
 ## Build
 
@@ -29,6 +29,8 @@ The certificate is not installed as a trusted root — `codesign` accepts an unt
 
 - Nyx lives in the menu bar (owl icon) — no Dock icon.
 - Add apps via the dashboard picker, which lists everything in your Applications folders plus whatever is running, by pressing **⌃⇧L** while using an app, or from the owl menu's first item, which toggles protection for whatever is frontmost.
+- Add sites in the dashboard's **Protected sites** section — `youtube.com` covers the whole browser whenever a matching page is your front tab, and lifts again when you switch away. Subdomains count (`m.youtube.com`), look-alikes do not (`notyoutube.com`).
+- Site rules read the front tab's address through the accessibility API, and only while a browser is frontmost and something is capturing. Nyx never reads your address bar in the background.
 - The protected list persists at `~/Library/Application Support/Nyx/protected.json`.
 
 ## Known limitations (v1)
@@ -36,7 +38,9 @@ The certificate is not installed as a trusted root — `codesign` accepts an unt
 - macOS shows its screen-capture indicator ("Nyx — Currently Sharing") while a window is mirrored, which only happens while something else is already capturing the screen. There is no API to suppress it; the mirror is local-only and never leaves your Mac. Clicking the system "Stop Sharing" turns Nyx protection off (re-enable from the owl menu).
 - Nyx notices a share a moment after it starts, not before. A protected app that is already frontmost when the share begins is covered about half a second in, as soon as the capture is running. Once engaged, Nyx stays engaged until you switch apps even if the share ended earlier: it cannot tell the share's capture apart from its own mirror.
 
-- Every window the protected app owns is covered, including its menus and tooltips. Browsers are still protected as whole apps, not per-tab.
+- Every window the protected app owns is covered, including its menus and tooltips. A site rule covers the whole browser while the matching tab is front, not that tab alone — Nyx composites at window level and cannot see where a tab's content sits.
+- A tab switch fires no system notification, so a site rule reacts to the accessibility tree changing, with a 0.35s poll behind it. Switching to a listed site is covered in well under a second, but not in the same frame the way an app switch is.
+- Where a browser gives no address — Firefox only publishes one while its accessibility engine is running — site rules fall back to matching the brand label in the window title, so `youtube.com` trips on a window titled "… — YouTube". Coarser than host matching in both directions.
 - Notifications are drawn by the system, not by the protected app, so they are not covered.
 - The overlay sits one level above the protected app's own windows, so the Dock, the Cmd-Tab switcher, the menu bar and menu-bar-extra menus stay visible over it. While the app has a menu or tooltip open the overlay rises to cover that too, and those system elements are hidden from you (never from viewers) until it closes.
 - Mission Control and Exposé shrink the real windows out from under the placeholders.
