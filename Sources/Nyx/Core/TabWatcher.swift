@@ -27,6 +27,7 @@ final class TabWatcher {
         guard watchedPID != pid else { return }
         stop()
         watchedPID = pid
+        BrowserTabReader.enableWebTree(pid: pid)
         startObserver(pid: pid)
         let timer = Timer(timeInterval: Self.pollInterval, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.recheck() }

@@ -23,13 +23,18 @@ enum BrowserTabReader {
         AXIsProcessTrustedWithOptions([Self.promptOption: true] as CFDictionary)
     }
 
+    /// Chrome-family builds keep the web tree out of the accessibility API
+    /// until something asks for it. Asked once per browser, not once per read.
+    static func enableWebTree(pid: pid_t) {
+        let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, messagingTimeout)
+        AXUIElementSetAttributeValue(app, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+    }
+
     static func read(pid: pid_t) -> BrowserTab? {
         guard isTrusted else { return nil }
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, messagingTimeout)
-        // Chrome-family builds keep the web tree out of the accessibility API
-        // until something asks for it.
-        AXUIElementSetAttributeValue(app, "AXManualAccessibility" as CFString, kCFBooleanTrue)
         guard let window = element(attribute(app, kAXFocusedWindowAttribute)) else { return nil }
 
         var tab = BrowserTab()
