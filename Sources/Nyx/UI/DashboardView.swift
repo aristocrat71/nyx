@@ -353,10 +353,28 @@ struct DashboardView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
+            credit
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    private var credit: some View {
+        HStack(spacing: 5) {
+            Text("made with love by")
+                .font(Theme.font(10))
+                .foregroundColor(Theme.muted)
+            if let unravel = Theme.unravel {
+                Image(nsImage: unravel)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 12)
+                    .accessibilityLabel("Unravel")
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 2)
     }
 
     private var statusRow: some View {

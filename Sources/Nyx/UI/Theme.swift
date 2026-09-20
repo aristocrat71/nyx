@@ -59,6 +59,17 @@ enum Theme {
         return image
     }()
 
+    /// Kept in its own colours, unlike the owl: it is someone else's wordmark,
+    /// not a glyph for this window to tint.
+    static let unravel: NSImage? = {
+        guard let url = Bundle.module.url(forResource: "unravel", withExtension: "png"),
+              let image = NSImage(contentsOf: url) else {
+            Log.ui.error("bundled unravel wordmark missing")
+            return nil
+        }
+        return image
+    }()
+
     static func nsFont(_ size: CGFloat, medium: Bool = false) -> NSFont {
         let name = medium ? "JetBrainsMono-Medium" : "JetBrainsMono-Regular"
         return NSFont(name: name, size: size)

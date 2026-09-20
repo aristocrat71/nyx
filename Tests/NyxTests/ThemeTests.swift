@@ -14,6 +14,14 @@ struct BundledAssetTests {
         #expect(owl.size.width > 0 && owl.size.height > 0)
     }
 
+    /// A wordmark that misses the bundle is dropped silently by every caller,
+    /// so the credit line would read "made with love by" and stop there.
+    @Test func theUnravelWordmarkLoadsInItsOwnColours() throws {
+        let unravel = try #require(Theme.unravel)
+        #expect(!unravel.isTemplate)
+        #expect(unravel.size.width > unravel.size.height)
+    }
+
     /// Keyed off the paper it was drawn on: if the background survived, the
     /// corners would be opaque and the logo would be a box on a dark dashboard.
     @Test func theArtworkBackgroundIsTransparent() throws {

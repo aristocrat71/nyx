@@ -40,20 +40,23 @@ class OverlayWindow: NSWindow {
 
 final class PlaceholderWindow: OverlayWindow {
     private static let minimumLabelSize = CGSize(width: 320, height: 160)
-    private let label = NSTextField(labelWithString: "Nyx is protecting this window")
+    private static let creditMarkHeight: CGFloat = 15
+    private let caption = NSStackView()
 
     init() {
         super.init(level: OverlayLevel.placeholder(coveringLayer: 0))
         backgroundColor = NSColor.black.withAlphaComponent(0.995)
         let content = NSView()
         content.wantsLayer = true
-        label.font = Theme.nsFont(22)
-        label.textColor = .white
-        label.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(label)
+        caption.orientation = .vertical
+        caption.alignment = .centerX
+        caption.spacing = 18
+        caption.setViews([Self.headline(), Self.credit()], in: .center)
+        caption.translatesAutoresizingMaskIntoConstraints = false
+        content.addSubview(caption)
         NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: content.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: content.centerYAnchor),
+            caption.centerXAnchor.constraint(equalTo: content.centerXAnchor),
+            caption.centerYAnchor.constraint(equalTo: content.centerYAnchor),
         ])
         contentView = content
     }
@@ -61,8 +64,41 @@ final class PlaceholderWindow: OverlayWindow {
     func place(at frame: CGRect, level: NSWindow.Level) {
         if self.level != level { self.level = level }
         if self.frame != frame { setFrame(frame, display: false) }
-        label.isHidden = frame.width < Self.minimumLabelSize.width
+        caption.isHidden = frame.width < Self.minimumLabelSize.width
             || frame.height < Self.minimumLabelSize.height
+    }
+
+    private static func headline() -> NSView {
+        let label = NSTextField(labelWithString: "Nyx is protecting this window")
+        label.font = Theme.nsFont(22)
+        label.textColor = .white
+        return label
+    }
+
+    /// The wordmark carries the name, so it stands in for the last word rather
+    /// than sitting beside a spelled-out one.
+    private static func credit() -> NSView {
+        let row = NSStackView()
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = 7
+        let label = NSTextField(labelWithString: "made with love by")
+        label.font = Theme.nsFont(13)
+        label.textColor = NSColor.white.withAlphaComponent(0.55)
+        row.addArrangedSubview(label)
+        guard let unravel = Theme.unravel else { return row }
+        let mark = NSImageView(image: unravel)
+        mark.imageScaling = .scaleProportionallyUpOrDown
+        mark.setAccessibilityLabel("Unravel")
+        row.addArrangedSubview(mark)
+        NSLayoutConstraint.activate([
+            mark.heightAnchor.constraint(equalToConstant: creditMarkHeight),
+            mark.widthAnchor.constraint(
+                equalTo: mark.heightAnchor,
+                multiplier: unravel.size.width / unravel.size.height
+            ),
+        ])
+        return row
     }
 }
 
