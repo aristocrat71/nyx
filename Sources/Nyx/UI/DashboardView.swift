@@ -69,8 +69,9 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         permissionTimer?.invalidate()
+        // Scheduled onto the main run loop, so the block only ever fires there.
         permissionTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
-            self?.model.refreshPermission()
+            MainActor.assumeIsolated { self?.model.refreshPermission() }
         }
     }
 
