@@ -134,6 +134,10 @@ final class ProtectionList: ObservableObject {
         )
     }
 
+    func add(_ app: InstalledApp) {
+        add(bundleID: app.bundleID, name: app.name, requirement: CodeIdentity.designatedRequirement(ofBundleAt: app.url))
+    }
+
     struct Loaded: Equatable {
         var apps: [ProtectedApp] = []
         var hotkey = HotkeySpec.standard

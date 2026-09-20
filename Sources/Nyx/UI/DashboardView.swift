@@ -252,7 +252,7 @@ struct DashboardView: View {
         .buttonStyle(.plain)
         .padding(.horizontal, 16)
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
-            RunningAppsPicker(alreadyProtected: Set(list.apps.map(\.bundleID))) { app in
+            AppPicker(alreadyProtected: Set(list.apps.map(\.bundleID))) { app in
                 list.add(app)
                 showingPicker = false
             }
@@ -370,7 +370,7 @@ struct SettingsPopover: View {
                 Image(systemName: "info.circle")
                     .font(.system(size: 11))
                     .foregroundColor(Theme.muted)
-                Text("macOS shows a screen-sharing indicator while Nyx mirrors a window. The mirror never leaves your Mac.")
+                Text("macOS shows a screen-sharing indicator while Nyx mirrors a window, which only happens during a share. The mirror never leaves your Mac.")
                     .font(Theme.font(11))
                     .foregroundColor(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -460,15 +460,15 @@ private enum AppIcons {
     }
 }
 
-private struct RunningAppsPicker: View {
+private struct AppPicker: View {
     let alreadyProtected: Set<String>
-    let onPick: (NSRunningApplication) -> Void
+    let onPick: (InstalledApp) -> Void
     @State private var filter = ""
-    @State private var apps: [NSRunningApplication] = []
+    @State private var apps: [InstalledApp] = []
 
-    private var filtered: [NSRunningApplication] {
+    private var filtered: [InstalledApp] {
         guard !filter.isEmpty else { return apps }
-        return apps.filter { ($0.localizedName ?? "").localizedCaseInsensitiveContains(filter) }
+        return apps.filter { $0.name.localizedCaseInsensitiveContains(filter) }
     }
 
     var body: some View {
@@ -481,41 +481,39 @@ private struct RunningAppsPicker: View {
             Rectangle().fill(Theme.hairline).frame(height: 1)
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    ForEach(filtered, id: \.processIdentifier) { app in
+                    ForEach(filtered) { app in
                         PickerRow(app: app) { onPick(app) }
                     }
                 }
             }
         }
-        .frame(width: 260, height: 320)
+        .frame(width: 260, height: 360)
         .background(Theme.panel)
         .background(CaptureExcluded())
-        .onAppear(perform: load)
+        .task { await load() }
     }
 
-    private func load() {
-        apps = NSWorkspace.shared.runningApplications
-            .filter { app in
-                app.activationPolicy == .regular
-                    && app.processIdentifier != NSRunningApplication.current.processIdentifier
-                    && app.bundleIdentifier.map { !alreadyProtected.contains($0) } ?? false
-            }
-            .sorted { ($0.localizedName ?? "") < ($1.localizedName ?? "") }
+    /// Running apps show at once; the folder scan fills in the rest.
+    private func load() async {
+        let running = InstalledApps.running()
+        apps = InstalledApps.merge(running, excluding: alreadyProtected)
+        let installed = await Task.detached { InstalledApps.installed() }.value
+        apps = InstalledApps.merge(running, installed, excluding: alreadyProtected)
     }
 }
 
 private struct PickerRow: View {
-    let app: NSRunningApplication
+    let app: InstalledApp
     let onPick: () -> Void
     @State private var hovering = false
 
     var body: some View {
         Button(action: onPick) {
             HStack(spacing: 8) {
-                Image(nsImage: app.icon ?? NSImage())
+                Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
                     .resizable()
                     .frame(width: 18, height: 18)
-                Text(app.localizedName ?? app.bundleIdentifier ?? "unknown")
+                Text(app.name)
                     .font(Theme.font(12))
                     .foregroundColor(Theme.text)
                 Spacer()
