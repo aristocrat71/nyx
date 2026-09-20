@@ -129,7 +129,8 @@ struct DashboardView: View {
                         .font(Theme.font(11))
                         .foregroundColor(Theme.muted)
                 }
-                Spacer()
+                Spacer(minLength: 8)
+                credit
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 18)
@@ -353,7 +354,6 @@ struct DashboardView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
-            credit
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
@@ -361,20 +361,23 @@ struct DashboardView: View {
     }
 
     private var credit: some View {
-        HStack(spacing: 5) {
-            Text("made with love by")
-                .font(Theme.font(10))
-                .foregroundColor(Theme.muted)
-            if let unravel = Theme.unravel {
-                Image(nsImage: unravel)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 12)
-                    .accessibilityLabel("Unravel")
+        Button(action: openUnravel) {
+            HStack(spacing: 5) {
+                Text("Developed by")
+                    .font(Theme.font(10))
+                    .foregroundColor(Theme.muted)
+                if let unravel = Theme.unravel {
+                    Image(nsImage: unravel)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 12)
+                }
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 2)
+        .buttonStyle(.plain)
+        .accessibilityLabel("Unravel")
+        .help("unravel.tech")
+        .onHover { $0 ? NSCursor.pointingHand.push() : NSCursor.pop() }
     }
 
     private var statusRow: some View {
@@ -406,6 +409,11 @@ struct DashboardView: View {
     private func openAccessibilitySettings() {
         BrowserTabReader.requestTrust()
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
+        NSWorkspace.shared.open(url)
+    }
+
+    private func openUnravel() {
+        let url = URL(string: "https://unravel.tech")!
         NSWorkspace.shared.open(url)
     }
 

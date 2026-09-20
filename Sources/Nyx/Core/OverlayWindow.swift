@@ -75,21 +75,19 @@ final class PlaceholderWindow: OverlayWindow {
         return label
     }
 
-    /// The wordmark carries the name, so it stands in for the last word rather
-    /// than sitting beside a spelled-out one.
     private static func credit() -> NSView {
         let row = NSStackView()
         row.orientation = .horizontal
         row.alignment = .centerY
         row.spacing = 7
-        let label = NSTextField(labelWithString: "made with love by")
+        let label = NSTextField(labelWithString: "Developed by")
         label.font = Theme.nsFont(13)
         label.textColor = NSColor.white.withAlphaComponent(0.55)
         row.addArrangedSubview(label)
         guard let unravel = Theme.unravel else { return row }
         let mark = NSImageView(image: unravel)
         mark.imageScaling = .scaleProportionallyUpOrDown
-        mark.setAccessibilityLabel("Unravel")
+        mark.setAccessibilityLabel("unravel")
         row.addArrangedSubview(mark)
         NSLayoutConstraint.activate([
             mark.heightAnchor.constraint(equalToConstant: creditMarkHeight),
