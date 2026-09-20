@@ -39,21 +39,25 @@ class OverlayWindow: NSWindow {
 }
 
 final class PlaceholderWindow: OverlayWindow {
-    private static let minimumLabelSize = CGSize(width: 320, height: 160)
-    private let label = NSTextField(labelWithString: "Nyx is protecting this window")
+    private static let captionMargin = CGSize(width: 48, height: 96)
+    private static let creditMarkHeight: CGFloat = 24
+    private let caption = NSStackView()
+    private lazy var captionSize = caption.fittingSize
 
     init() {
         super.init(level: OverlayLevel.placeholder(coveringLayer: 0))
         backgroundColor = NSColor.black.withAlphaComponent(0.995)
         let content = NSView()
         content.wantsLayer = true
-        label.font = Theme.nsFont(22)
-        label.textColor = .white
-        label.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(label)
+        caption.orientation = .vertical
+        caption.alignment = .centerX
+        caption.spacing = 20
+        caption.setViews([Self.headline(), Self.credit()], in: .center)
+        caption.translatesAutoresizingMaskIntoConstraints = false
+        content.addSubview(caption)
         NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: content.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: content.centerYAnchor),
+            caption.centerXAnchor.constraint(equalTo: content.centerXAnchor),
+            caption.centerYAnchor.constraint(equalTo: content.centerYAnchor),
         ])
         contentView = content
     }
@@ -61,8 +65,39 @@ final class PlaceholderWindow: OverlayWindow {
     func place(at frame: CGRect, level: NSWindow.Level) {
         if self.level != level { self.level = level }
         if self.frame != frame { setFrame(frame, display: false) }
-        label.isHidden = frame.width < Self.minimumLabelSize.width
-            || frame.height < Self.minimumLabelSize.height
+        caption.isHidden = frame.width < captionSize.width + Self.captionMargin.width
+            || frame.height < captionSize.height + Self.captionMargin.height
+    }
+
+    private static func headline() -> NSView {
+        let label = NSTextField(labelWithString: "Nyx is protecting this window")
+        label.font = Theme.nsFont(30)
+        label.textColor = .white
+        return label
+    }
+
+    private static func credit() -> NSView {
+        let row = NSStackView()
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = 7
+        let label = NSTextField(labelWithString: "Developed by")
+        label.font = Theme.nsFont(20)
+        label.textColor = NSColor.white.withAlphaComponent(0.55)
+        row.addArrangedSubview(label)
+        guard let unravel = Theme.unravel else { return row }
+        let mark = NSImageView(image: unravel)
+        mark.imageScaling = .scaleProportionallyUpOrDown
+        mark.setAccessibilityLabel("unravel")
+        row.addArrangedSubview(mark)
+        NSLayoutConstraint.activate([
+            mark.heightAnchor.constraint(equalToConstant: creditMarkHeight),
+            mark.widthAnchor.constraint(
+                equalTo: mark.heightAnchor,
+                multiplier: unravel.size.width / unravel.size.height
+            ),
+        ])
+        return row
     }
 }
 

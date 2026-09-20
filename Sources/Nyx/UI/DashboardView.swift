@@ -69,8 +69,9 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         permissionTimer?.invalidate()
+        // Scheduled onto the main run loop, so the block only ever fires there.
         permissionTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
-            self?.model.refreshPermission()
+            MainActor.assumeIsolated { self?.model.refreshPermission() }
         }
     }
 
@@ -86,6 +87,7 @@ struct DashboardView: View {
     @ObservedObject var list: ProtectionList
     @ObservedObject var model: AppModel
     @State private var showingPicker = false
+    @State private var showingSiteEntry = false
     @State private var showingSettings = false
     @State private var siteField = ""
 
@@ -129,7 +131,8 @@ struct DashboardView: View {
                         .font(Theme.font(11))
                         .foregroundColor(Theme.muted)
                 }
-                Spacer()
+                Spacer(minLength: 8)
+                credit
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 18)
@@ -240,7 +243,7 @@ struct DashboardView: View {
                         ForEach(list.sites) { site in
                             SiteRow(site: site) { list.removeSite(host: site.host) }
                         }
-                        siteEntry
+                        addSiteButton.padding(.top, 8)
                     }
                 }
             }
@@ -256,40 +259,6 @@ struct DashboardView: View {
             .foregroundColor(Theme.muted)
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
-    }
-
-    private var siteEntry: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            siteInputRow
-            if !siteField.isEmpty && ProtectedSite.normalize(siteField) == nil {
-                Text("Enter a host like youtube.com, or paste a page address.")
-                    .font(Theme.font(10))
-                    .foregroundColor(Theme.muted)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
-        .padding(.bottom, 4)
-    }
-
-    private var siteInputRow: some View {
-        HStack(spacing: 8) {
-            TextField("youtube.com", text: $siteField)
-                .textFieldStyle(.plain)
-                .font(Theme.font(12))
-                .foregroundColor(Theme.text)
-                .onSubmit(commitSite)
-                .padding(.horizontal, 9)
-                .frame(height: 26)
-                .background(Theme.control)
-                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.controlBorder, lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-            Button(action: commitSite) {
-                Text("Add").pill()
-            }
-            .buttonStyle(.plain)
-            .disabled(ProtectedSite.normalize(siteField) == nil)
-        }
     }
 
     private var emptyState: some View {
@@ -313,7 +282,7 @@ struct DashboardView: View {
                 .font(Theme.font(11))
                 .foregroundColor(Theme.muted)
                 .padding(.top, 6)
-            siteEntry
+            addSiteButton
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -330,6 +299,17 @@ struct DashboardView: View {
                 list.add(app)
                 showingPicker = false
             }
+        }
+    }
+
+    private var addSiteButton: some View {
+        Button { showingSiteEntry = true } label: {
+            Text("+ Add website…").pill()
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .popover(isPresented: $showingSiteEntry, arrowEdge: .bottom) {
+            SiteEntry(field: $siteField, onCommit: commitSite)
         }
     }
 
@@ -357,6 +337,26 @@ struct DashboardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    private var credit: some View {
+        Button(action: openUnravel) {
+            HStack(spacing: 5) {
+                Text("Developed by")
+                    .font(Theme.font(10))
+                    .foregroundColor(Theme.muted)
+                if let unravel = Theme.unravel {
+                    Image(nsImage: unravel)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 12)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Unravel")
+        .help("unravel.tech")
+        .onHover { $0 ? NSCursor.pointingHand.push() : NSCursor.pop() }
     }
 
     private var statusRow: some View {
@@ -391,9 +391,15 @@ struct DashboardView: View {
         NSWorkspace.shared.open(url)
     }
 
+    private func openUnravel() {
+        let url = URL(string: "https://unravel.tech")!
+        NSWorkspace.shared.open(url)
+    }
+
     private func commitSite() {
         guard list.addSite(siteField) != nil else { return }
         siteField = ""
+        showingSiteEntry = false
         if !model.hasAccessibilityPermission { BrowserTabReader.requestTrust() }
     }
 }
@@ -575,6 +581,45 @@ private enum AppIcons {
             return NSWorkspace.shared.icon(for: .applicationBundle)
         }
         return NSWorkspace.shared.icon(forFile: url.path)
+    }
+}
+
+/// A popover is its own window and does not inherit the dashboard's sharing
+/// type, so it is excluded from capture the way the app picker is.
+private struct SiteEntry: View {
+    @Binding var field: String
+    let onCommit: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("youtube.com", text: $field)
+                .textFieldStyle(.plain)
+                .font(Theme.font(12))
+                .foregroundColor(Theme.text)
+                .onSubmit(onCommit)
+                .padding(.horizontal, 9)
+                .frame(height: 26)
+                .background(Theme.control)
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.controlBorder, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            // Only once something typed has been rejected: shown up front it
+            // reads as an instruction the plain placeholder already gives.
+            if !field.isEmpty && ProtectedSite.normalize(field) == nil {
+                Text("Enter a host like youtube.com, or paste a page address.")
+                    .font(Theme.font(10))
+                    .foregroundColor(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Button(action: onCommit) {
+                Text("Add").pill()
+            }
+            .buttonStyle(.plain)
+            .disabled(ProtectedSite.normalize(field) == nil)
+        }
+        .padding(14)
+        .frame(width: 260)
+        .background(Theme.panel)
+        .background(CaptureExcluded())
     }
 }
 
