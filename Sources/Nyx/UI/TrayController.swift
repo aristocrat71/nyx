@@ -113,9 +113,8 @@ final class TrayController: NSObject, NSMenuDelegate {
 
     @objc private func quit() { NSApp.terminate(nil) }
 
-    // Idle is a template outline; the engaged variants are filled in labelColor
-    // with a status dot (template images can't carry color, so those resolve at
-    // draw time): amber while mirroring, red while hidden without a preview.
+    // Idle is a template outline; engaged variants carry a status dot and resolve at
+    // draw time, since templates hold no colour: amber mirroring, red hidden.
     private static func owlImage(filled: Bool, dotColor: NSColor?) -> NSImage {
         let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
             let ink: NSColor = filled ? .labelColor : .black

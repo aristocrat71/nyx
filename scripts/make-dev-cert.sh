@@ -1,9 +1,6 @@
 #!/bin/bash
-# One-time: creates a self-signed "Nyx Dev" signing identity so the app's
-# signature — and its Screen Recording grant — survives rebuilds.
-# The certificate is NOT marked trusted: codesign accepts an untrusted leaf
-# when it is addressed by hash, and TCC keys the grant to the leaf either way.
-# Remove it with scripts/remove-dev-cert.sh.
+# One-time: a self-signed "Nyx Dev" identity so the signature — and the Screen
+# Recording grant TCC keys to it — survives rebuilds. Undo: remove-dev-cert.sh.
 set -euo pipefail
 
 NAME="Nyx Dev"

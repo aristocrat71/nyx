@@ -1,8 +1,7 @@
 import AppKit
 
-/// The black rectangles viewers see. Driven straight off CGWindowList, with no
-/// dependency on ScreenCaptureKit, so cover goes up whether or not the mirror
-/// can run — a failing capture degrades to "hidden", never to "visible".
+/// The black rectangles viewers see, driven off CGWindowList rather than
+/// ScreenCaptureKit: a failing capture degrades to "hidden", never "visible".
 @MainActor
 final class PlaceholderLayer {
     /// Margin held while a window is in motion. One resnap tick of lag at a

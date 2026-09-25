@@ -1,13 +1,7 @@
 import AppKit
 
-// Turns assets/nyx-logo.png into the two things Nyx draws it as: a
-// transparent-backed glyph the dashboard tints, and a 1024 icon canvas.
-//
-//   render-icon.swift <source.png> <glyph-out.png> <icon-out.png> <small-out.png>
-//
-// Two icon canvases, because one does not downscale to both ends of the range:
-// the owl is fine line work, and at 16pt the padding that frames it at 512
-// leaves too few pixels for the strokes to survive.
+// Turns assets/nyx-logo.png into the glyph the dashboard tints and two icon
+// canvases: at 16pt the padding that frames the owl at 512 starves its strokes.
 
 let args = CommandLine.arguments
 guard args.count > 4 else {
@@ -54,9 +48,8 @@ guard let source = NSImage(contentsOfFile: sourcePath) else {
     exit(1)
 }
 
-// The artwork is black line work printed on paper, with no alpha of its own.
-// Ink coverage is what carries the shape, so alpha is taken from how far each
-// pixel falls below the paper's luminance and the colour is discarded.
+// Black line work on paper, with no alpha of its own: alpha comes from how far
+// each pixel falls below the paper's luminance, and the colour is discarded.
 let size = source.size
 let (width, height) = (Int(size.width.rounded()), Int(size.height.rounded()))
 let flat = makeRep(width, height)
@@ -67,10 +60,8 @@ draw(into: flat) {
 let glyph = makeRep(width, height)
 guard let input = flat.bitmapData, let output = glyph.bitmapData else { exit(1) }
 let paperLuminance = 0.2126 * 0.98 + 0.7152 * 0.98 + 0.0722 * 0.96
-// The scan's paper is not perfectly flat: it carries up to 0.023 of measured
-// ink, which survives as a faint rectangle the size of the source image. The
-// toe drops that floor. Real edges start well above it — the artwork is bimodal,
-// paper under 0.05 and strokes over 0.85 — so antialiasing is untouched.
+// The paper measures up to 0.023 of ink, a faint rectangle the toe drops. The
+// artwork is bimodal — paper under 0.05, strokes over 0.85 — so edges survive.
 let toe = 0.06
 
 for pixel in 0 ..< (width * height) {

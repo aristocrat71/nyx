@@ -2,8 +2,7 @@ import AppKit
 import ScreenCaptureKit
 
 /// What the user sees through the placeholders: one capture-excluded window per
-/// display, showing every window the protected app owns — including its menus,
-/// which a per-window stream cannot follow.
+/// display, showing every window the app owns — its menus included.
 @MainActor
 final class MirrorLayer: NSObject {
     enum Failure {
@@ -166,9 +165,8 @@ extension MirrorLayer: SCStreamDelegate {
     }
 }
 
-/// SCShareableContent and the objects it vends are immutable snapshots handed
-/// over on ScreenCaptureKit's own queue and never touched again, so moving one
-/// to the main queue is safe even though the type carries no Sendable promise.
+/// SCShareableContent vends immutable snapshots that are never touched again, so
+/// hopping one to the main queue is safe despite the missing Sendable promise.
 private struct Snapshot: @unchecked Sendable {
     let content: SCShareableContent?
 

@@ -1,10 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// Windows AppKit creates on Nyx's behalf — popovers, menus — do not inherit
-/// the dashboard's `sharingType` and default to `.readOnly`, so viewers would
-/// see the app picker and the protection state. Both are excluded before they
-/// are first displayed.
+/// Popovers and menus AppKit makes on Nyx's behalf default to `.readOnly` instead
+/// of inheriting the dashboard's `sharingType`, so each is excluded before it shows.
 @MainActor
 enum CaptureExclusion {
     /// Call from `menuNeedsUpdate`/`menuWillOpen`: the menu's window already
