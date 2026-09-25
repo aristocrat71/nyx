@@ -22,6 +22,28 @@ struct BundledAssetTests {
         #expect(unravel.size.width > unravel.size.height)
     }
 
+    /// The credit squares its type against rows measured off this art: a
+    /// redrawn wordmark has to be measured again, not quietly dropped in.
+    @Test func theWordmarkSitsWhereTheCreditPlacesIt() throws {
+        let unravel = try #require(Theme.unravel)
+        let data = try #require(unravel.tiffRepresentation)
+        let rep = try #require(NSBitmapImageRep(data: data))
+        func inked(_ y: Int) -> Int {
+            (0..<rep.pixelsWide).count { (rep.colorAt(x: $0, y: y)?.alphaComponent ?? 0) > 0.5 }
+        }
+        let art = CGFloat(rep.pixelsHigh)
+        let baseline = Int(Theme.wordmarkBaseline(inHeight: art))
+        #expect(inked(baseline - 1) > rep.pixelsWide / 4)
+        // under the baseline sit only the round letters, and not for long
+        #expect(inked(baseline) < inked(baseline - 1) / 2)
+        #expect(inked(baseline + 2) == 0)
+
+        let size: CGFloat = 26
+        let height = Theme.wordmarkHeight(forFontSize: size)
+        let body = try #require((0..<rep.pixelsHigh).first { inked($0) > rep.pixelsWide / 8 })
+        #expect(abs(CGFloat(baseline - body) / art * height - Theme.nsFont(size).xHeight) < 0.5)
+    }
+
     /// Keyed off the paper it was drawn on: if the background survived, the
     /// corners would be opaque and the logo would be a box on a dark dashboard.
     @Test func theArtworkBackgroundIsTransparent() throws {

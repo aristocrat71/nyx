@@ -70,6 +70,21 @@ enum Theme {
         return image
     }()
 
+    /// The wordmark art pads its ink: the baseline sits 240 rows down of 260 and
+    /// the x-height tops out at row 84, so type can be squared to both.
+    private static let wordmarkBaselineFraction: CGFloat = 240 / 260
+    private static let wordmarkXHeightFraction: CGFloat = (240 - 84) / 260
+
+    /// Drawn this tall, the wordmark carries the x-height of `size` type beside it.
+    static func wordmarkHeight(forFontSize size: CGFloat) -> CGFloat {
+        nsFont(size).xHeight / wordmarkXHeightFraction
+    }
+
+    /// How far under the drawn wordmark's top edge its own baseline falls.
+    static func wordmarkBaseline(inHeight height: CGFloat) -> CGFloat {
+        height * wordmarkBaselineFraction
+    }
+
     static func nsFont(_ size: CGFloat, medium: Bool = false) -> NSFont {
         let name = medium ? "JetBrainsMono-Medium" : "JetBrainsMono-Regular"
         return NSFont(name: name, size: size)
