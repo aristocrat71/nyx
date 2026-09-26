@@ -45,9 +45,11 @@ IDENTITY="${CODESIGN_IDENTITY:-}"
 if [ -n "$IDENTITY" ]; then
   SIGN_ARGS+=(--timestamp)
 else
+  # `|| true`: no dev identity is the ad-hoc case below, not a failure, and
+  # pipefail would otherwise take the whole script down with grep.
   IDENTITY=$(security find-identity -p codesigning 2>/dev/null \
     | grep -E '^ *[0-9]+\) [0-9A-F]+ "Nyx Dev"( \(.*\))?$' \
-    | head -1 | awk '{print $2}')
+    | head -1 | awk '{print $2}' || true)
   [ -n "$IDENTITY" ] && SIGN_ARGS+=(--timestamp=none)
 fi
 
