@@ -2,16 +2,37 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-swift build -c release
+# NYX_UNIVERSAL builds both slices so one download covers Apple Silicon and
+# Intel; without it the bundle carries only the building Mac's architecture.
+if [ -n "${NYX_UNIVERSAL:-}" ]; then
+  swift build -c release --triple arm64-apple-macosx
+  swift build -c release --triple x86_64-apple-macosx
+  PRODUCTS=".build/arm64-apple-macosx/release"
+else
+  swift build -c release
+  PRODUCTS=".build/release"
+fi
 
 APP="build/Nyx.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp .build/release/Nyx "$APP/Contents/MacOS/Nyx"
-cp -R .build/release/Nyx_Nyx.bundle "$APP/Contents/Resources/"
+if [ -n "${NYX_UNIVERSAL:-}" ]; then
+  lipo -create -output "$APP/Contents/MacOS/Nyx" \
+    "$PRODUCTS/Nyx" ".build/x86_64-apple-macosx/release/Nyx"
+else
+  cp "$PRODUCTS/Nyx" "$APP/Contents/MacOS/Nyx"
+fi
+cp -R "$PRODUCTS/Nyx_Nyx.bundle" "$APP/Contents/Resources/"
 cp assets/Info.plist "$APP/Contents/Info.plist"
 if [ -f assets/AppIcon.icns ]; then
   cp assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+fi
+
+# The release stamps the tag's version in, so the bundle a user installs reports
+# the release they downloaded rather than whatever the plist was last set to.
+if [ -n "${NYX_VERSION:-}" ]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $NYX_VERSION" \
+    -c "Set :CFBundleVersion $NYX_VERSION" "$APP/Contents/Info.plist" >/dev/null
 fi
 
 # Hardened runtime keeps a same-user process from injecting into Nyx and

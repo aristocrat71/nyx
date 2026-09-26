@@ -4,6 +4,10 @@ Screen-share privacy for macOS. Share your entire screen; when you switch to a p
 
 Requires macOS 14+ and Screen Recording permission. Site rules additionally need Accessibility permission.
 
+## Install
+
+Download the DMG from the [latest release](https://github.com/aristocrat71/nyx/releases/latest), open it and drag Nyx to Applications. Verify the download first with `shasum -a 256 -c Nyx-<version>.dmg.sha256`.
+
 ## Build
 
 ```sh
@@ -11,6 +15,7 @@ make run      # build and run from the terminal
 make test     # run the test suite
 make release  # optimized build
 make app      # assemble build/Nyx.app (tray app, bundled fonts, icon)
+make dmg      # wrap build/Nyx.app in build/Nyx-<version>.dmg
 make icon     # rebuild the app icon and the dashboard glyph from assets/nyx-logo.png
 make clean    # remove build artifacts
 ```
@@ -47,4 +52,4 @@ The certificate is not installed as a trusted root — `codesign` accepts an unt
 - If Nyx cannot start its capture stream it fails closed: the placeholder stays up and you lose the local preview until the stream recovers. The menu bar icon turns red and the dashboard says "Hidden — no local preview".
 - While a protected app is frontmost during a share Nyx costs roughly 10% of one core (a full-display capture plus a 60 Hz window resnap). It is idle otherwise.
 
-Design and build plan live in `docs/`.
+Design and build plan live in `docs/`. Cutting a release, and what it needs configured on GitHub, is `DEPLOY.md`.
