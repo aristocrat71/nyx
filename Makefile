@@ -1,4 +1,4 @@
-.PHONY: run release app icon test clean
+.PHONY: run release app dmg icon test clean
 
 run:
 	swift run
@@ -21,6 +21,10 @@ release:
 
 app:
 	./scripts/make-app.sh
+
+# `NYX_UNIVERSAL=1 make app dmg` builds the two-slice bundle a release ships.
+dmg:
+	./scripts/make-dmg.sh
 
 # Both outputs come off assets/nyx-logo.png: the bundled glyph the dashboard
 # tints, and the icns. Rerun after changing the logo.

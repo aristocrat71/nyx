@@ -1,0 +1,229 @@
+name: release
+
+# Tag-triggered release. Push a tag like `nyx-v0.1.0` and CI builds a universal
+# Nyx.app, signs and notarizes it, wraps it in a DMG and publishes that to a
+# GitHub Release with the changelog section for that version as the body.
+#
+# The version users see is CFBundleShortVersionString in assets/Info.plist — the
+# guard job refuses a tag that disagrees with it, so bump the plist first.
+on:
+  push:
+    tags:
+      - "nyx-v*"
+
+# Least privilege by default: every job is read-only unless it opts into more.
+permissions:
+  contents: read
+
+jobs:
+  # Guardrail: a tag can only release if its commit is actually on `main`. Tags
+  # aren't branch-bound, so pushing `nyx-v*` from a feature branch would
+  # otherwise ship un-merged code. This cheap job runs first and blocks the build.
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.notes.outputs.version }}
+      notes: ${{ steps.notes.outputs.body }}
+    steps:
+      # All actions pinned to a full commit SHA (not a movable tag) so a hijacked
+      # or repointed tag can't inject code — the version is in the trailing comment.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # full history so --contains can see origin/main
+
+      - name: Refuse to release a tag that isn't on main
+        run: |
+          # Fetched by name rather than trusted to be here: a tag checkout has no
+          # main of its own, and a missing ref would read as "not on main".
+          git fetch --no-tags -q origin +refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "${{ github.sha }}" refs/remotes/origin/main; then
+            echo "::error::${{ github.ref_name }} points at a commit that is not on main — refusing to release."
+            exit 1
+          fi
+
+      - name: Check the bundle version matches the tag
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#nyx-v}"
+          plist=$(sed -n '/<key>CFBundleShortVersionString<\/key>/{n;s/.*<string>\(.*\)<\/string>.*/\1/p;}' assets/Info.plist)
+          if [ "$plist" != "$version" ]; then
+            echo "::error::assets/Info.plist says $plist but the tag says $version — bump the plist before tagging."
+            exit 1
+          fi
+
+      # The release body comes from CHANGELOG.md.
+      - name: Extract release notes
+        id: notes
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#nyx-v}"
+          # Print the body of the "## [<version>]" section, stopping at the next
+          # one. Blank lines top and bottom are trimmed; the heading itself (and
+          # so its date) never reaches the release page.
+          body=$(awk -v v="$version" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { lines[++n] = $0; if (NF) { if (!first) first = n; last = n } }
+            END { if (first) for (i = first; i <= last; i++) print lines[i] }
+          ' CHANGELOG.md)
+          if [ -z "$body" ]; then
+            echo "::error::CHANGELOG.md has no '## [$version]' section — add one before tagging."
+            exit 1
+          fi
+          # A line equal to the delimiter would close the value early and let the
+          # rest of the file forge step outputs.
+          if printf '%s\n' "$body" | grep -qx 'CHANGELOG_EOF'; then
+            echo "::error::CHANGELOG.md contains the output delimiter CHANGELOG_EOF"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          {
+            echo 'body<<CHANGELOG_EOF'
+            printf '%s\n' "$body"
+            echo 'CHANGELOG_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: guard
+    # macOS 26 pinned, not macos-latest: Package.swift asks for swift-tools 6.2,
+    # which no earlier runner image ships.
+    runs-on: macos-26
+    # The only job that touches the signing key + publishes. Gate it behind a
+    # protected environment — add yourself as a required reviewer in repo
+    # Settings → Environments → "release" so a release pauses for approval before
+    # the key is exposed. (An unconfigured environment is auto-created with no
+    # gate, so this never blocks a release until you set the rules.)
+    environment: release
+    permissions:
+      contents: write # create the release + upload assets
+      id-token: write # OIDC token used to sign the provenance attestation
+      attestations: write # write the build-provenance attestation
+    env:
+      TAG: ${{ github.ref_name }}
+      VERSION: ${{ needs.guard.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Decide whether this build can be signed
+        id: signing
+        env:
+          CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+        run: |
+          if [ -n "$CERTIFICATE" ] && [ -n "$APPLE_ID" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No Developer ID secrets set — shipping an ad-hoc signed build that Gatekeeper blocks until the user overrides it."
+          fi
+
+      - name: Import the Developer ID certificate
+        if: steps.signing.outputs.enabled == 'true'
+        env:
+          CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          keychain="$RUNNER_TEMP/nyx-signing.keychain-db"
+          password=$(openssl rand -hex 20)
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          printf '%s' "$CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" \
+            -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/certificate.p12"
+          # Without a partition list codesign blocks on a UI prompt no one can answer.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$password" "$keychain" >/dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          identity=$(security find-identity -v -p codesigning "$keychain" \
+            | awk '/Developer ID Application/ { print $2; exit }')
+          if [ -z "$identity" ]; then
+            echo "::error::the imported certificate holds no Developer ID Application identity"
+            exit 1
+          fi
+          echo "CODESIGN_IDENTITY=$identity" >> "$GITHUB_ENV"
+
+      - name: Build the app
+        env:
+          NYX_UNIVERSAL: "1"
+          NYX_VERSION: ${{ needs.guard.outputs.version }}
+        run: make app
+
+      - name: Notarize the app
+        if: steps.signing.outputs.enabled == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: ./scripts/notarize.sh build/Nyx.app
+
+      - name: Build the DMG
+        run: make dmg
+
+      - name: Notarize the DMG
+        if: steps.signing.outputs.enabled == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: ./scripts/notarize.sh "build/Nyx-$VERSION.dmg"
+
+      # Gatekeeper's own verdict, on the artifact as a user will receive it. An
+      # accepted app is also the check that the TCC grant will survive an update.
+      - name: Verify Gatekeeper accepts the build
+        if: steps.signing.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          spctl --assess --type exec -vv build/Nyx.app
+          spctl --assess --type open --context context:primary-signature -vv "build/Nyx-$VERSION.dmg"
+
+      # Published next to the DMG so a download can be verified before opening it.
+      - name: Publish a SHA-256 checksum
+        run: |
+          set -euo pipefail
+          cd build
+          shasum -a 256 "Nyx-$VERSION.dmg" > "Nyx-$VERSION.dmg.sha256"
+          cat "Nyx-$VERSION.dmg.sha256"
+
+      - name: Compose the release body
+        env:
+          NOTES: ${{ needs.guard.outputs.notes }}
+          SIGNED: ${{ steps.signing.outputs.enabled }}
+        run: |
+          set -euo pipefail
+          printf '%s\n\n---\n\n' "$NOTES" > build/notes.md
+          cat >> build/notes.md <<'EOF'
+          Download the DMG below, open it and drag **Nyx** to Applications. Nyx
+          needs Screen Recording permission, and Accessibility too if you use site
+          rules; it asks on first launch. Requires macOS 14 or later.
+
+          Verify the download before opening it:
+
+          EOF
+          printf '```sh\nshasum -a 256 -c Nyx-%s.dmg.sha256\n```\n' "$VERSION" >> build/notes.md
+          if [ "$SIGNED" != "true" ]; then
+            cat >> build/notes.md <<'EOF'
+
+          **This build is not notarized.** macOS will refuse to open it until you
+          allow it under System Settings → Privacy & Security → Open Anyway.
+          EOF
+          fi
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$TAG" --verify-tag --title "$TAG" \
+            --notes-file build/notes.md \
+            "build/Nyx-$VERSION.dmg" "build/Nyx-$VERSION.dmg.sha256"
+
+      # Cryptographic build provenance: a signed attestation tying the DMG to
+      # this repo + workflow run, verifiable with
+      # `gh attestation verify <file> --repo aristocrat71/nyx`. Independent of the
+      # release assets, so it holds even if a release is later tampered with.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: build/Nyx-${{ needs.guard.outputs.version }}.dmg
