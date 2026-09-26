@@ -3,9 +3,8 @@
 run:
 	swift run
 
-# With only the Command Line Tools installed, swift-testing needs its framework
-# pointed at explicitly and its Foundation cross-import overlay disabled — that
-# overlay ships without a module and fails to resolve.
+# Command Line Tools alone: swift-testing needs its framework pointed at and the
+# Foundation cross-import overlay disabled, since that overlay ships no module.
 test:
 	@set -eu; \
 	fw=/Library/Developer/CommandLineTools/Library/Developer/Frameworks; \

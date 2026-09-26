@@ -59,9 +59,8 @@ final class ForegroundWatcher {
         engine.disengage()
     }
 
-    // Engaging is keyed on the process, not on any window existing yet: the
-    // engine covers whatever is on screen every frame, so restore-from-minimize
-    // and late-created windows need no separate retry poll.
+    // Keyed on the process, not on a window existing yet: the engine covers
+    // what is on screen every frame, so late windows need no retry poll.
     private func evaluate(_ app: NSRunningApplication?) {
         // A mirror nobody is watching only lights the sharing indicator, so
         // nothing engages until some other process is capturing.
@@ -79,10 +78,8 @@ final class ForegroundWatcher {
             engine.disengage()
             return
         }
-        // A mismatch still gets covered — refusing to cover would be the one
-        // failure mode that shows content. It is worth saying out loud though:
-        // the process holding this bundle identifier is not the code the user
-        // pointed Nyx at.
+        // Covered anyway: refusing would be the one failure mode that shows
+        // content. Still worth saying that this is not the pinned code.
         if let requirement = list.app(withBundleID: bundleID)?.requirement,
            !CodeIdentity.process(app.processIdentifier, satisfies: requirement) {
             Log.watcher.error("frontmost process does not match the pinned signing identity")

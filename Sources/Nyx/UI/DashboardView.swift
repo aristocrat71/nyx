@@ -10,9 +10,8 @@ final class AppModel: ObservableObject {
     @Published var state: ProtectionState = .idle
     @Published var hasScreenPermission = CGPreflightScreenCaptureAccess()
     @Published var hasAccessibilityPermission = BrowserTabReader.isTrusted
-    /// Starts on whatever the Mac is set to, then follows the settings picker.
-    /// Read from the global default rather than NSApp, which is nil until the
-    /// application object exists.
+    /// Starts on whatever the Mac is set to, then follows the settings picker. Read
+    /// from the global default: NSApp is nil until the application object exists.
     @Published var isDark: Bool = UserDefaults.standard.object(forKey: darkKey) as? Bool
         ?? (UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark")
     {
@@ -339,17 +338,22 @@ struct DashboardView: View {
         .padding(.vertical, 12)
     }
 
+    /// Two lines, the wordmark set to the width of the words above it, so the
+    /// credit squares off on both edges.
     private var credit: some View {
-        Button(action: openUnravel) {
-            HStack(spacing: 5) {
-                Text("Developed by")
-                    .font(Theme.font(10))
+        let size: CGFloat = 11
+        let line = "Developed by"
+        let width = (line as NSString).size(withAttributes: [.font: Theme.nsFont(size)]).width
+        return Button(action: openUnravel) {
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(line)
+                    .font(Theme.font(size))
                     .foregroundColor(Theme.muted)
                 if let unravel = Theme.unravel {
                     Image(nsImage: unravel)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(height: 12)
+                        .frame(width: width)
                 }
             }
         }
@@ -557,10 +561,8 @@ private struct AppRow: View {
 
 }
 
-/// LaunchServices resolves a bundle identifier to whichever bundle currently
-/// claims it, so an app that squats a protected identifier could put its own
-/// artwork in this list. Icons are only taken from a bundle that satisfies the
-/// identity pinned when the app was added.
+/// LaunchServices hands back whichever bundle claims the identifier, so an icon is
+/// only taken from one that satisfies the identity pinned when the app was added.
 @MainActor
 private enum AppIcons {
     private static var cache: [String: NSImage] = [:]

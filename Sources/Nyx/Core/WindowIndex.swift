@@ -7,9 +7,8 @@ struct TargetWindow: Equatable {
 }
 
 enum WindowIndex {
-    /// Every on-screen window owned by `pid`, at every layer. Context menus,
-    /// File-menu dropdowns and tooltips are owned by the app that opened them
-    /// and composite far above its ordinary windows, so they need covering too.
+    /// Every on-screen window owned by `pid`, at every layer: menus and tooltips
+    /// composite far above the app's ordinary windows and need covering too.
     static func onScreenWindows(of pid: pid_t) -> [TargetWindow] {
         guard let list = CGWindowListCopyWindowInfo(
             [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID

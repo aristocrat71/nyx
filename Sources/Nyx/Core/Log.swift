@@ -1,9 +1,8 @@
 import Foundation
 import os
 
-/// Which app the user has open, and when, is exactly what Nyx exists to hide —
-/// so nothing identifying is logged in the clear, and routine activity stays at
-/// `.debug`, which the unified log keeps in memory rather than on disk.
+/// Which app is open, and when, is what Nyx exists to hide: nothing identifying
+/// is logged in the clear, and routine activity stays at in-memory `.debug`.
 enum Log {
     private static let subsystem = "tech.unravel.nyx"
 

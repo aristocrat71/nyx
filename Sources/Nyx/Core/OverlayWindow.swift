@@ -40,7 +40,7 @@ class OverlayWindow: NSWindow {
 
 final class PlaceholderWindow: OverlayWindow {
     private static let captionMargin = CGSize(width: 48, height: 96)
-    private static let creditMarkHeight: CGFloat = 24
+    private static let creditFontSize: CGFloat = 26
     private let caption = NSStackView()
     private lazy var captionSize = caption.fittingSize
 
@@ -76,25 +76,41 @@ final class PlaceholderWindow: OverlayWindow {
         return label
     }
 
+    /// Hand-laid rather than stacked: the wordmark has to sit on the label's
+    /// baseline, and a stack view would only centre its box against the text.
     private static func credit() -> NSView {
-        let row = NSStackView()
-        row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = 7
+        let row = NSView()
         let label = NSTextField(labelWithString: "Developed by")
-        label.font = Theme.nsFont(20)
+        label.font = Theme.nsFont(creditFontSize)
         label.textColor = NSColor.white.withAlphaComponent(0.55)
-        row.addArrangedSubview(label)
-        guard let unravel = Theme.unravel else { return row }
+        label.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+            label.topAnchor.constraint(equalTo: row.topAnchor),
+            label.bottomAnchor.constraint(equalTo: row.bottomAnchor),
+        ])
+        guard let unravel = Theme.unravel else {
+            label.trailingAnchor.constraint(equalTo: row.trailingAnchor).isActive = true
+            return row
+        }
         let mark = NSImageView(image: unravel)
         mark.imageScaling = .scaleProportionallyUpOrDown
         mark.setAccessibilityLabel("unravel")
-        row.addArrangedSubview(mark)
+        mark.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(mark)
+        let height = Theme.wordmarkHeight(forFontSize: creditFontSize)
         NSLayoutConstraint.activate([
-            mark.heightAnchor.constraint(equalToConstant: creditMarkHeight),
+            mark.heightAnchor.constraint(equalToConstant: height),
             mark.widthAnchor.constraint(
                 equalTo: mark.heightAnchor,
                 multiplier: unravel.size.width / unravel.size.height
+            ),
+            mark.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: 8),
+            mark.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            mark.topAnchor.constraint(
+                equalTo: label.lastBaselineAnchor,
+                constant: -Theme.wordmarkBaseline(inHeight: height)
             ),
         ])
         return row

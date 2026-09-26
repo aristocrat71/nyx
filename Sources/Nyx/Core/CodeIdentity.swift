@@ -1,14 +1,11 @@
 import AppKit
 import Security
 
-/// A bundle identifier is self-asserted: any process can claim one. Nyx records
-/// the designated requirement of the app it was pointed at, so it can tell
-/// whether the process claiming that identifier now is the same code.
+/// A bundle identifier is self-asserted, so Nyx pins the designated requirement
+/// of the app it was pointed at and checks later claimants against it.
 enum CodeIdentity {
-    /// Static checks skip per-resource hashing — this is an identity check, not
-    /// an integrity audit, and hashing a large bundle stalls the UI. The flag is
-    /// rejected outright by the dynamic check, which reads the kernel's record
-    /// and is cheap anyway.
+    /// An identity check, not an integrity audit: hashing every resource of a
+    /// large bundle stalls the UI, and the dynamic check rejects the flag anyway.
     private static let staticFlags = SecCSFlags(rawValue: kSecCSDoNotValidateResources)
 
     static func designatedRequirement(ofBundleAt url: URL) -> String? {

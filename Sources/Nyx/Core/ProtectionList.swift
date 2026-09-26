@@ -35,9 +35,8 @@ struct HotkeySpec: Codable, Equatable {
     /// Control-Shift-L: Carbon controlKey|shiftKey with kVK_ANSI_L.
     static let standard = HotkeySpec(keyCode: 37, carbonModifiers: UInt32(controlKey | shiftKey))
 
-    /// The spec goes straight to RegisterEventHotKey, so it is checked before
-    /// use: a real virtual key code, only real modifier bits, and at least one
-    /// non-shift modifier so a file cannot bind a bare letter key.
+    /// The spec goes straight to RegisterEventHotKey, so it is checked first: real
+    /// key code, real modifier bits, one non-shift modifier minimum.
     var isWellFormed: Bool {
         keyCode < 128
             && carbonModifiers & ~Self.allowedModifiers == 0
@@ -56,9 +55,8 @@ final class ProtectionList: ObservableObject {
     @Published var protectionEnabled: Bool = true {
         didSet { if !isLoading { persistAndNotify() } }
     }
-    /// Set when the stored list could not be read. The file is left untouched
-    /// so the user can recover it, and the dashboard says so rather than
-    /// quietly presenting an empty list as "nothing to protect".
+    /// Set when the stored list could not be read: the file is left for the user to
+    /// recover, and the dashboard says so rather than showing an empty list.
     @Published private(set) var loadFailed = false
 
     var hotkey = HotkeySpec.standard
@@ -187,9 +185,8 @@ final class ProtectionList: ObservableObject {
         if let stored = store.hotkey {
             if stored.isWellFormed { result.hotkey = stored } else { result.rejectedHotkey = true }
         }
-        // A stored "off" is deliberately not read back: turning protection off
-        // should take an action in this session, not a file that any same-user
-        // process can rewrite while Nyx is not running.
+        // A stored "off" is not read back: turning protection off should take an action
+        // in this session, not a file any same-user process could rewrite.
         return result
     }
 
