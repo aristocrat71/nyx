@@ -33,7 +33,10 @@ jobs:
 
       - name: Refuse to release a tag that isn't on main
         run: |
-          if ! git branch -r --contains "${{ github.sha }}" --format='%(refname:short)' | grep -qx 'origin/main'; then
+          # Fetched by name rather than trusted to be here: a tag checkout has no
+          # main of its own, and a missing ref would read as "not on main".
+          git fetch --no-tags -q origin +refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "${{ github.sha }}" refs/remotes/origin/main; then
             echo "::error::${{ github.ref_name }} points at a commit that is not on main — refusing to release."
             exit 1
           fi
@@ -42,8 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#nyx-v}"
-          plist=$(awk '/<key>CFBundleShortVersionString<\/key>/ {
-            getline; gsub(/[[:space:]]*<\/?string>/, ""); print; exit }' assets/Info.plist)
+          plist=$(sed -n '/<key>CFBundleShortVersionString<\/key>/{n;s/.*<string>\(.*\)<\/string>.*/\1/p;}' assets/Info.plist)
           if [ "$plist" != "$version" ]; then
             echo "::error::assets/Info.plist says $plist but the tag says $version — bump the plist before tagging."
             exit 1
