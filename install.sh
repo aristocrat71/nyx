@@ -19,15 +19,6 @@ os_version="$(sw_vers -productVersion)"
 [ "${os_version%%.*}" -ge 14 ] \
   || die "Nyx needs macOS 14 or later (this is $os_version)"
 
-# First asset download URL whose filename matches the given regex.
-asset_url() {
-  curl -fsSL "$API" 2>/dev/null \
-    | grep -o '"browser_download_url": *"[^"]*"' \
-    | sed 's/.*"\(https[^"]*\)"/\1/' \
-    | grep -iE "$1" \
-    | head -1
-}
-
 sha256_of() {
   if command -v shasum >/dev/null 2>&1; then
     shasum -a 256 "$1" | awk '{print $1}'
@@ -53,8 +44,15 @@ verify_sha() {
 }
 
 say "Fetching the Nyx release…"
-url="$(asset_url '\.dmg$')" || true
-[ -n "${url:-}" ] || die "no macOS .dmg in that release"
+# Fetched once and checked on its own, so a rate limit or an unreachable API
+# doesn't get reported as a release that publishes no DMG.
+release="$(curl -fsSL "$API")" \
+  || die "cannot reach the release API for ${NYX_VERSION:-the latest release} — no such release, rate limited, or offline"
+url="$(printf '%s' "$release" \
+  | grep -o '"browser_download_url": *"[^"]*"' \
+  | sed 's/.*"\(https[^"]*\)"/\1/' \
+  | grep -iE '\.dmg$' | head -1)" || true
+[ -n "${url:-}" ] || die "${NYX_VERSION:-the latest release} publishes no .dmg"
 
 tmp="$(mktemp -d)"
 trap 'hdiutil detach "$tmp/mnt" -quiet 2>/dev/null || true; rm -rf "$tmp"' EXIT
