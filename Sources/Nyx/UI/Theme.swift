@@ -3,7 +3,7 @@ import SwiftUI
 
 enum Theme {
     static func registerBundledFonts() {
-        guard let urls = Bundle.module.urls(forResourcesWithExtension: "ttf", subdirectory: "Fonts"),
+        guard let urls = Bundle.nyxResources.urls(forResourcesWithExtension: "ttf", subdirectory: "Fonts"),
               !urls.isEmpty else {
             Log.ui.error("no bundled fonts found, using system monospaced")
             return
@@ -50,7 +50,7 @@ enum Theme {
     /// Drawn as a template: the artwork is one ink on paper, so keying the paper
     /// out leaves a mask the dashboard can tint for either appearance.
     static let owl: NSImage? = {
-        guard let url = Bundle.module.url(forResource: "owl", withExtension: "png"),
+        guard let url = Bundle.nyxResources.url(forResource: "owl", withExtension: "png"),
               let image = NSImage(contentsOf: url) else {
             Log.ui.error("bundled owl artwork missing")
             return nil
@@ -62,7 +62,7 @@ enum Theme {
     /// Kept in its own colours, unlike the owl: it is someone else's wordmark,
     /// not a glyph for this window to tint.
     static let unravel: NSImage? = {
-        guard let url = Bundle.module.url(forResource: "unravel", withExtension: "png"),
+        guard let url = Bundle.nyxResources.url(forResource: "unravel", withExtension: "png"),
               let image = NSImage(contentsOf: url) else {
             Log.ui.error("bundled unravel wordmark missing")
             return nil
