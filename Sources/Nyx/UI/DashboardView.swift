@@ -28,6 +28,12 @@ final class AppModel: ObservableObject {
     }
 }
 
+/// Esc closes the dashboard. While a text field is editing it ends that edit
+/// instead — the field editor consumes the key before it reaches the window.
+private final class DashboardWindow: NSWindow {
+    override func cancelOperation(_ sender: Any?) { performClose(sender) }
+}
+
 final class DashboardWindowController: NSWindowController, NSWindowDelegate {
     private let model: AppModel
     private var permissionTimer: Timer?
@@ -35,7 +41,7 @@ final class DashboardWindowController: NSWindowController, NSWindowDelegate {
 
     init(list: ProtectionList, model: AppModel) {
         self.model = model
-        let window = NSWindow(
+        let window = DashboardWindow(
             contentRect: NSRect(x: 0, y: 0, width: 420, height: 540),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,

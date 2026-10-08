@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Theme.registerBundledFonts()
+        MainMenu.install()
         if !CGPreflightScreenCaptureAccess() {
             Log.ui.error("screen recording permission missing — requesting")
             CGRequestScreenCaptureAccess()
