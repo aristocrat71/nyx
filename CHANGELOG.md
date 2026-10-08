@@ -10,7 +10,17 @@ the tag being built and uses it as the GitHub release body, so it is what anyone
 downloading Nyx reads. A tag with no matching section here fails the release
 before anything is built. Write the entry as you merge, not at tag time.
 
-## [0.1.0] - Unreleased
+## [0.1.1] - 2026-10-08
+
+### Fixed
+
+- **Nyx quit instantly on launch.** Every 0.1.0 install outside a build machine
+  died before drawing anything: the app looked for its bundled fonts and images
+  beside the app bundle, and then at a build path that only exists on the
+  machine that compiled it. It now reads them from inside the app, where they
+  have always been shipped.
+
+## [0.1.0] - 2026-10-08
 
 First release. Nyx sits in the menu bar and blacks out the apps and sites you
 list whenever something is capturing your screen — you keep using them normally,
