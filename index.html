@@ -26,10 +26,6 @@
   --accent-hover: #1b39c9;
   --accent-soft: #dce3ff;
   --on-accent: #f0f2f8;
-  --warning: #8a570c;
-  --warning-bg: #f6efe0;
-  --warning-line: #e3d3ad;
-  --pine: #1d5510;
 
   /* The cover is a blackout, not a surface — it never follows the page. */
   --cover: #111c36;
@@ -63,7 +59,6 @@ h1, h2, h3 { font-weight: 500; margin: 0; }
 h1 { font-size: clamp(2.5rem, 5.4vw, 4.35rem); letter-spacing: -.03em; line-height: 1.06; max-width: 13ch; text-wrap: balance; }
 h2 { font-size: 1.6rem; letter-spacing: -.025em; }
 h3 { font-size: 1rem; letter-spacing: -.01em; }
-.eyebrow { font-size: .78rem; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0; }
 
 /* ---------- masthead ---------- */
 .masthead { border-bottom: 1px solid var(--line); }
@@ -129,9 +124,6 @@ section { padding-block: 4rem; border-top: 1px solid var(--line); }
 .ruled p { margin: 0; color: var(--muted); max-width: 62ch; }
 .ruled kbd { font: 500 .85em var(--font-body); background: var(--gallery); border: 1px solid var(--line); border-radius: var(--r-sm); padding: .1em .4em; }
 
-/* ---------- install ---------- */
-.note { margin-top: 1.4rem; padding: 1rem 1.15rem; background: var(--warning-bg); border: 1px solid var(--warning-line); border-radius: var(--r-md); font-size: .88rem; color: var(--warning); max-width: 62ch; }
-.note b { font-weight: 600; }
 
 /* ---------- diagram ---------- */
 .diagram { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--raised); padding: 1.5rem; overflow-x: auto; }
@@ -157,7 +149,6 @@ footer nav a:hover { color: var(--ink); }
     </div>
     <nav>
       <a href="#how">How it works</a>
-      <a href="#install">Install</a>
       <a href="https://github.com/aristocrat71/nyx">GitHub</a>
     </nav>
   </div>
@@ -166,7 +157,6 @@ footer nav a:hover { color: var(--ink); }
 <div class="hero">
   <div class="wrap">
     <div>
-      <p class="eyebrow">macOS · v0.1.0</p>
       <h1>Share your screen, not everything on it.</h1>
       <p class="lede">Blacks out the apps and sites you choose while something is capturing your screen. <strong>You keep working</strong> — viewers see a placeholder.</p>
 
@@ -240,18 +230,6 @@ footer nav a:hover { color: var(--ink); }
     </div>
     <div class="diagram">
       <img src="assets/nyx-how-it-works.png" alt="The real app sits under a black cover that viewers see and a live mirror that only you see." width="1700" height="1000">
-    </div>
-  </div>
-</section>
-
-<section id="install">
-  <div class="wrap">
-    <div class="sec-head">
-      <h2>Install</h2>
-      <p>The one-liner verifies the DMG's published SHA-256 before installing, and aborts if it doesn't match. Pin a version with <code>NYX_VERSION=nyx-vX.Y.Z</code>, or <a href="https://github.com/aristocrat71/nyx/releases/latest">download the DMG</a> and drag Nyx to Applications.</p>
-    </div>
-    <div class="note">
-      <b>Not notarized.</b> The install script clears the quarantine flag so Nyx opens anyway. Installing by hand, allow it under System Settings → Privacy &amp; Security → Open Anyway.
     </div>
   </div>
 </section>
