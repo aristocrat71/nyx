@@ -6,7 +6,15 @@ Requires macOS 14+ and Screen Recording permission. Site rules additionally need
 
 ## Install
 
-Download the DMG from the [latest release](https://github.com/aristocrat71/nyx/releases/latest), open it and drag Nyx to Applications. Verify the download first with `shasum -a 256 -c Nyx-<version>.dmg.sha256`.
+The one-liner downloads the latest DMG, **verifies its published SHA-256 checksum**, and installs to `/Applications` — aborting if the checksum is missing or doesn't match. The URL is pinned to a release tag, not a moving branch; to read the script first, open that raw URL or grab `install.sh` and run it locally.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx/nyx-v0.1.0/install.sh | bash
+```
+
+Pin a version with `NYX_VERSION=nyx-vX.Y.Z`. Or do it by hand: download the DMG from the [latest release](https://github.com/aristocrat71/nyx/releases/latest), verify it with `shasum -a 256 -c Nyx-<version>.dmg.sha256`, open it and drag Nyx to Applications.
+
+Either way Nyx asks for Screen Recording permission on first launch.
 
 ## Build
 

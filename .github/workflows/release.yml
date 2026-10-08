@@ -194,20 +194,25 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s\n\n---\n\n' "$NOTES" > build/notes.md
+          printf 'Install with one command — it verifies the checksum before installing:\n\n' >> build/notes.md
+          printf '```sh\ncurl -fsSL https://raw.githubusercontent.com/%s/%s/install.sh | bash\n```\n\n' \
+            "$GITHUB_REPOSITORY" "$TAG" >> build/notes.md
           cat >> build/notes.md <<'EOF'
-          Download the DMG below, open it and drag **Nyx** to Applications. Nyx
+          Or download the DMG below, open it and drag **Nyx** to Applications. Nyx
           needs Screen Recording permission, and Accessibility too if you use site
           rules; it asks on first launch. Requires macOS 14 or later.
 
-          Verify the download before opening it:
+          Verify a manual download before opening it:
 
           EOF
           printf '```sh\nshasum -a 256 -c Nyx-%s.dmg.sha256\n```\n' "$VERSION" >> build/notes.md
           if [ "$SIGNED" != "true" ]; then
             cat >> build/notes.md <<'EOF'
 
-          **This build is not notarized.** macOS will refuse to open it until you
-          allow it under System Settings → Privacy & Security → Open Anyway.
+          **This build is not notarized.** The install script clears the quarantine
+          flag so it still opens. Installing from the DMG by hand, macOS refuses the
+          first launch until you allow it under System Settings → Privacy & Security
+          → Open Anyway.
           EOF
           fi
 

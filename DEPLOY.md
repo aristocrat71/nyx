@@ -205,6 +205,13 @@ gh attestation verify Nyx-X.Y.Z.dmg --repo aristocrat71/nyx
 Open it, drag Nyx to Applications, launch it, and grant Screen Recording — a
 notarized build should do all of that without a Gatekeeper detour.
 
+Then the path most users actually take, which also proves `install.sh` resolves
+the new release and its checksum:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx/nyx-vX.Y.Z/install.sh | bash
+```
+
 ---
 
 ## Redo a release (bad build / wrong commit)
@@ -243,6 +250,7 @@ make dmg
 
 - Workflows: `.github/workflows/release.yml`, `.github/workflows/ci.yml`
 - Packaging: `scripts/make-app.sh`, `scripts/make-dmg.sh`, `scripts/notarize.sh`
+- Installer: `install.sh` — users curl it from a tag, so it must keep working against the published assets
 - Version: `assets/Info.plist` → `CFBundleShortVersionString`
 - Release notes: `CHANGELOG.md`
 - Repo settings: Settings → Environments → `release`, Settings → Rules
