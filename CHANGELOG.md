@@ -10,6 +10,15 @@ the tag being built and uses it as the GitHub release body, so it is what anyone
 downloading Nyx reads. A tag with no matching section here fails the release
 before anything is built. Write the entry as you merge, not at tag time.
 
+## [0.1.3] - 2026-10-08
+
+### Fixed
+
+- **Keyboard shortcuts in the dashboard.** Nyx never created a menu, and macOS
+  delivers shortcuts through it, so ⌘V, ⌘C, ⌘X and ⌘A did nothing in the app
+  filter and the site field, and ⌘W and ⌘Q did nothing at all. All of them work
+  now, and Esc closes the dashboard — or abandons a half-typed site entry.
+
 ## [0.1.1] - 2026-10-08
 
 ### Fixed

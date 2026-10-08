@@ -21,7 +21,7 @@ You keep using them normally — viewers see a placeholder.
 ## Install
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx/nyx-v0.1.1/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx/nyx-v0.1.3/install.sh | bash
 ```
 
 Downloads the latest DMG, **verifies its published SHA-256 checksum**, and installs to `/Applications` — aborting if the checksum is missing or doesn't match. The URL is pinned to a release tag, not a moving branch, so you can read the script at that URL before running it. Pin a version with `NYX_VERSION=nyx-vX.Y.Z`.
