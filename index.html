@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nyx — screen-share privacy for macOS</title>
+<meta name="description" content="Nyx blacks out the apps and sites you choose while something is capturing your screen. You keep using them normally; viewers see a placeholder.">
+<link rel="icon" href="assets/nyx-logo.png">
+<meta property="og:title" content="Nyx — screen-share privacy for macOS">
+<meta property="og:description" content="Share your screen, not everything on it.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --paper: #f0f2f8;
+  --raised: #ffffff;
+  --gallery: #e3e7f1;
+  --ink: #111c36;
+  --muted: #59647a;
+  --line: #c5cbd8;
+  --line-strong: #7b859a;
+  --accent: #2448e8;
+  --accent-hover: #1b39c9;
+  --accent-soft: #dce3ff;
+  --on-accent: #f0f2f8;
+
+  /* The cover is a blackout, not a surface — it never follows the page. */
+  --cover: #111c36;
+  --cover-fg: #f0f2f8;
+
+  --r-sm: 2px;
+  --r-md: 3px;
+  --r-lg: 5px;
+  --shadow-soft: 0 .65rem 1.8rem rgba(17, 28, 54, .08);
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --container: 1180px;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--accent-hover); }
+.wrap { max-width: var(--container); margin: 0 auto; padding: 0 2rem; }
+
+h1, h2, h3 { font-weight: 500; margin: 0; }
+h1 { font-size: clamp(2.5rem, 5.4vw, 4.35rem); letter-spacing: -.03em; line-height: 1.06; max-width: 13ch; text-wrap: balance; }
+h2 { font-size: 1.6rem; letter-spacing: -.025em; }
+h3 { font-size: 1rem; letter-spacing: -.01em; }
+
+/* ---------- masthead ---------- */
+.masthead { border-bottom: 1px solid var(--line); }
+.masthead .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem 1.5rem; padding-block: 1.1rem; flex-wrap: wrap; }
+.brandrow { display: flex; align-items: center; gap: .7rem; }
+.brandrow img { width: 26px; height: auto; }
+.brandrow b { font-weight: 500; font-size: 1.15rem; letter-spacing: -.02em; }
+.masthead nav { display: flex; align-items: center; gap: 1.25rem; font-size: .9rem; flex-wrap: wrap; }
+.masthead nav a { color: var(--muted); text-decoration: none; }
+.masthead nav a:hover { color: var(--ink); }
+
+/* ---------- hero ---------- */
+/* minmax(0,…) or the nowrap install command sets a min-content floor and eats the second column. */
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 56fr) minmax(0, 40fr); gap: 4rem; align-items: center; padding-block: 5rem 4.5rem; }
+@media (max-width: 900px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 3rem; padding-block: 3rem; } }
+.lede { margin: 1.25rem 0 0; max-width: 54ch; font-size: 1.1rem; color: var(--muted); }
+.lede strong { font-weight: 600; color: var(--ink); }
+
+.cta { margin-top: 2.25rem; }
+.cmd { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raised); overflow: hidden; max-width: 100%; }
+.cmd code { flex: 1; min-width: 0; padding: .85rem 1rem; font-family: var(--font-mono); font-size: .82rem; white-space: nowrap; overflow-x: auto; }
+.cmd button {
+  flex: none; appearance: none; cursor: pointer; border: 0; border-left: 1px solid var(--line);
+  background: var(--gallery); color: var(--ink);
+  font: 500 .78rem/1 var(--font-body); letter-spacing: .04em; text-transform: uppercase;
+  padding-inline: 1.1rem;
+}
+.cmd button:hover { background: var(--accent-soft); }
+.cmd button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.row { display: flex; align-items: center; gap: 1.5rem; margin-top: 1.1rem; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: .5rem; padding: .7rem 1.15rem; border-radius: var(--r-sm); font-weight: 500; font-size: .92rem; text-decoration: none; border: 1px solid transparent; }
+.btn--fill { background: var(--accent); color: var(--on-accent); }
+.btn--fill:hover { background: var(--accent-hover); color: var(--on-accent); }
+.btn--ghost { border-color: var(--line-strong); color: var(--ink); }
+.btn--ghost:hover { border-color: var(--ink); color: var(--ink); }
+.btn svg { width: 1em; height: 1em; }
+.req { margin: 1.4rem 0 0; font-size: .86rem; color: var(--muted); }
+
+/* ---------- hero evidence: the two screens ---------- */
+.screens { display: flex; flex-direction: column; gap: 1.5rem; }
+.screen .cap { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .5rem; }
+.screen .cap b { font-weight: 500; font-size: .9rem; white-space: nowrap; }
+.screen .cap span { font-size: .78rem; color: var(--muted); text-align: right; }
+.frame { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--raised); box-shadow: var(--shadow-soft); overflow: hidden; }
+.frame .bar { display: flex; gap: 6px; padding: 9px 11px; border-bottom: 1px solid var(--line); }
+.frame .bar i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+.frame .bar i:first-child { background: var(--line-strong); }
+.body-pad { padding: 1rem 1.1rem 1.3rem; }
+.fake-title { height: 9px; width: 38%; background: var(--line-strong); border-radius: 2px; margin-bottom: .8rem; }
+.fake-line { height: 7px; background: var(--gallery); border-radius: 2px; margin-bottom: .5rem; }
+.fake-line:nth-child(2) { width: 92%; } .fake-line:nth-child(3) { width: 78%; } .fake-line:nth-child(4) { width: 85%; }
+.covered { background: var(--cover); color: var(--cover-fg); display: grid; place-items: center; text-align: center; padding: 2.4rem 1rem; }
+.covered p { margin: 0; font-size: .86rem; opacity: .92; }
+
+/* ---------- ruled sections ---------- */
+section { padding-block: 4rem; border-top: 1px solid var(--line); }
+.sec-head { max-width: 62ch; margin-bottom: 2.25rem; }
+.sec-head p { margin: .6rem 0 0; color: var(--muted); }
+.ruled { border-top: 1px solid var(--line); }
+.ruled > div { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 2rem; padding: 1.4rem 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 760px) { .ruled > div { grid-template-columns: minmax(0, 1fr); gap: .4rem; } }
+.ruled p { margin: 0; color: var(--muted); max-width: 62ch; }
+.ruled kbd { font: 500 .85em var(--font-body); background: var(--gallery); border: 1px solid var(--line); border-radius: var(--r-sm); padding: .1em .4em; }
+
+
+/* ---------- diagram ---------- */
+.diagram { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--raised); padding: 1.5rem; overflow-x: auto; }
+.diagram img { display: block; min-width: 680px; margin: 0 auto; }
+
+/* ---------- footer ---------- */
+footer { border-top: 1px solid var(--line); padding-block: 2.5rem 3.5rem; }
+footer .wrap { display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap; }
+.credit { display: flex; align-items: center; gap: .6rem; font-size: .84rem; color: var(--muted); }
+.credit img { height: 15px; width: auto; }
+footer nav { display: flex; gap: 1.5rem; font-size: .86rem; }
+footer nav a { color: var(--muted); text-decoration: none; }
+footer nav a:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="brandrow">
+      <img src="assets/nyx-logo.png" alt="" width="233" height="280">
+      <b>Nyx</b>
+    </div>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="https://github.com/aristocrat71/nyx">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <h1>Share your screen, not everything on it.</h1>
+      <p class="lede">Blacks out the apps and sites you choose while something is capturing your screen. <strong>You keep working</strong> — viewers see a placeholder.</p>
+
+      <div class="cta">
+        <div class="cmd">
+          <code id="cmd">curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx/nyx-v0.1.0/install.sh | bash</code>
+          <button type="button" id="copy" aria-label="Copy install command">Copy</button>
+        </div>
+        <div class="row">
+          <a class="btn btn--fill" href="https://github.com/aristocrat71/nyx/releases/latest">
+            Download the DMG
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn--ghost" href="https://github.com/aristocrat71/nyx">View source</a>
+        </div>
+        <p class="req">macOS 14 or later · Apple Silicon and Intel · needs Screen Recording permission</p>
+      </div>
+    </div>
+
+    <div class="screens">
+      <div class="screen">
+        <div class="cap"><b>Your screen</b><span>works exactly as normal</span></div>
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i></div>
+          <div class="body-pad">
+            <div class="fake-title"></div>
+            <div class="fake-line"></div><div class="fake-line"></div><div class="fake-line"></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen">
+        <div class="cap"><b>Viewers' screen</b><span>Meet, Zoom, any recording</span></div>
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i></div>
+          <div class="covered"><p>Nyx is protecting this window</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head"><h2>What it does</h2></div>
+    <div class="ruled">
+      <div>
+        <h3>Per-app protection</h3>
+        <p>Add an app from the dashboard, or hit <kbd>⌃⇧L</kbd> while using it. Every window it owns is covered.</p>
+      </div>
+      <div>
+        <h3>Per-site protection</h3>
+        <p>List <code>youtube.com</code> and the browser is covered while a matching tab is front. Subdomains count, look-alikes do not.</p>
+      </div>
+      <div>
+        <h3>Capture-gated</h3>
+        <p>Draws only while a screen capture is actually running. Idle otherwise.</p>
+      </div>
+      <div>
+        <h3>Fails closed</h3>
+        <p>If the local preview dies the placeholder stays up, and the menu bar icon turns red.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>How it works</h2>
+      <p>A black cover that capture software sees, and a live mirror that only you see. Your clicks pass through to the real app.</p>
+    </div>
+    <div class="diagram">
+      <img src="assets/nyx-how-it-works.png" alt="The real app sits under a black cover that viewers see and a live mirror that only you see." width="1700" height="1000">
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="credit">
+      <span>Built by</span>
+      <img src="assets/Unravel_Logo_-_Transparent.png" alt="Unravel" width="1000" height="260">
+    </div>
+    <nav>
+      <a href="https://github.com/aristocrat71/nyx">Source</a>
+      <a href="https://github.com/aristocrat71/nyx/releases">Releases</a>
+      <a href="https://github.com/aristocrat71/nyx/issues">Issues</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+document.getElementById('copy').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  try {
+    await navigator.clipboard.writeText(document.getElementById('cmd').textContent.trim());
+    btn.textContent = 'Copied';
+  } catch {
+    btn.textContent = 'Press ⌘C';
+  }
+  setTimeout(() => { btn.textContent = 'Copy'; }, 1800);
+});
+</script>
+
+</body>
+</html>
