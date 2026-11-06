@@ -58,6 +58,10 @@ pub fn post(f: impl FnOnce(&mut Nyx) + Send + 'static) {
     }
 }
 
+pub fn app() -> &'static AppHandle {
+    APP.get().expect("engine started")
+}
+
 pub fn with<R>(f: impl FnOnce(&mut Nyx) -> R) -> Option<R> {
     NYX.with(|cell| cell.borrow_mut().as_mut().map(f))
 }
@@ -89,6 +93,12 @@ pub fn start(app: AppHandle, list: ProtectionList) {
 }
 
 impl Nyx {
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.list.set_enabled(enabled);
+        self.evaluate();
+        crate::list_changed(&self.list);
+    }
+
     /// Keyed on the process, not a window existing yet: `tick` covers whatever is on
     /// screen each frame, so late windows need no retry.
     pub fn evaluate(&mut self) {
@@ -210,8 +220,7 @@ impl Nyx {
             // An explicit click on the system "Stop Sharing" is the one thing allowed to drop protection.
             MirrorEvent::UserStopped => {
                 log::error!("capture stopped from system UI, protection off");
-                self.list.enabled = false;
-                self.evaluate();
+                self.set_enabled(false);
             }
             MirrorEvent::NoPermission => {
                 crate::permission_lost();

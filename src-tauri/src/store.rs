@@ -131,6 +131,11 @@ impl ProtectionList {
         }
     }
 
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
+        self.save();
+    }
+
     pub fn remove(&mut self, id: &str) {
         self.apps.retain(|a| a.id != id);
         self.save();

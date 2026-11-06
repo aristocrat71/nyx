@@ -4,7 +4,7 @@ use objc2_app_kit::{
     NSWorkspaceDidActivateApplicationNotification, NSWorkspaceDidTerminateApplicationNotification,
 };
 use objc2_core_graphics::CGPreflightScreenCaptureAccess;
-use objc2_foundation::{NSNotificationCenter, NSOperationQueue};
+use objc2_foundation::{NSNotificationCenter, NSOperationQueue, NSString, NSUserDefaults};
 use std::ffi::{c_char, c_void, CStr};
 use std::sync::OnceLock;
 
@@ -109,6 +109,12 @@ pub fn capturing() -> bool {
 
 pub fn capture_gate_available() -> bool {
     skylight().is_some()
+}
+
+/// The menu bar follows the system appearance, which the dashboard's own setting never touches.
+pub fn dark_menu_bar() -> bool {
+    let style = NSUserDefaults::standardUserDefaults().stringForKey(&NSString::from_str("AppleInterfaceStyle"));
+    style.is_some_and(|s| s.to_string() == "Dark")
 }
 
 pub fn has_screen_permission() -> bool {

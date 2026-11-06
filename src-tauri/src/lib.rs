@@ -1,13 +1,14 @@
 mod engine;
 mod site;
 mod store;
+mod tray;
 
 #[cfg(target_os = "macos")]
 #[path = "platform/macos/mod.rs"]
 mod platform;
 
 use engine::State;
-use tauri::{Manager, WindowEvent};
+use tauri::{AppHandle, Manager, WindowEvent};
 
 struct StderrLog;
 
@@ -23,6 +24,18 @@ impl log::Log for StderrLog {
 
 fn state_changed(state: State) {
     log::debug!("state {state:?}");
+    tray::set_state(engine::app(), state);
+}
+
+fn list_changed(list: &store::ProtectionList) {
+    tray::refresh(engine::app(), list.enabled);
+}
+
+fn show_dashboard(app: &AppHandle) {
+    if let Some(dashboard) = app.get_webview_window("dashboard") {
+        let _ = dashboard.show();
+        let _ = dashboard.set_focus();
+    }
 }
 
 fn permission_lost() {
@@ -39,10 +52,9 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let path = app.path().config_dir()?.join("Nyx/protected.json");
+            tray::build(app.handle())?;
             engine::start(app.handle().clone(), store::ProtectionList::load(path));
-            if let Some(dashboard) = app.get_webview_window("dashboard") {
-                dashboard.show()?;
-            }
+            show_dashboard(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
