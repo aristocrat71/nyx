@@ -1,3 +1,4 @@
+mod engine;
 mod site;
 mod store;
 
@@ -5,6 +6,7 @@ mod store;
 #[path = "platform/macos/mod.rs"]
 mod platform;
 
+use engine::State;
 use tauri::{Manager, WindowEvent};
 
 struct StderrLog;
@@ -19,6 +21,10 @@ impl log::Log for StderrLog {
     fn flush(&self) {}
 }
 
+fn state_changed(state: State) {
+    log::debug!("state {state:?}");
+}
+
 pub fn run() {
     let _ = log::set_logger(&StderrLog);
     // Routine activity says which app is open and when, so release builds keep errors only.
@@ -28,8 +34,8 @@ pub fn run() {
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-            platform::observe(|| log::debug!("app changed"), || log::debug!("screens changed"));
-            platform::observe_capture(|| log::debug!("capture {}", platform::capturing()));
+            let path = app.path().config_dir()?.join("Nyx/protected.json");
+            engine::start(app.handle().clone(), store::ProtectionList::load(path));
             if let Some(dashboard) = app.get_webview_window("dashboard") {
                 dashboard.show()?;
             }

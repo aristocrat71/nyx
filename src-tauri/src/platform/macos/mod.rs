@@ -8,8 +8,10 @@ use objc2_foundation::{NSNotificationCenter, NSOperationQueue};
 use std::ffi::{c_char, c_void, CStr};
 use std::sync::OnceLock;
 
+mod mirror;
 mod overlay;
 
+pub use mirror::Mirror;
 pub use overlay::{windows_of, Placeholders};
 
 pub struct App {
