@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "The dashboard: core events and Nyx's own commands only",
   "windows": ["dashboard"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "core:window:allow-hide", "core:window:allow-start-dragging", "core:window:allow-set-theme"]
 }
