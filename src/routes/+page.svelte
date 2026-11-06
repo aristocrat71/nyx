@@ -110,7 +110,7 @@
   {#if open}<div class="backdrop" role="presentation" onclick={close}></div>{/if}
   {#if open === "app"}<AppPicker exclude={snap.apps.map((a) => a.id)} onclose={close} />{/if}
   {#if open === "site"}<SiteEntry onclose={close} />{/if}
-  {#if open === "settings"}<Settings bind:dark />{/if}
+  {#if open === "settings"}<Settings bind:dark platform={snap.platform} />{/if}
 
   <div class="hr"></div>
   <footer>

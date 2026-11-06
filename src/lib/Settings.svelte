@@ -1,5 +1,12 @@
 <script lang="ts">
-  let { dark = $bindable() }: { dark: boolean } = $props();
+  import type { Snapshot } from "./api";
+
+  let { dark = $bindable(), platform }: { dark: boolean; platform: Snapshot["platform"] } = $props();
+  const notes = {
+    macos: "macOS shows a screen-sharing indicator while Nyx mirrors a window, which only happens during a share. The mirror never leaves your Mac.",
+    windows: "Windows may draw a yellow border around a window while Nyx mirrors it. The mirror never leaves your PC.",
+    linux: "Linux cannot hide a window from a capture, so Nyx covers protected apps for you too. Viewers and you both see the placeholder.",
+  };
 </script>
 
 <div class="panel settings">
@@ -13,10 +20,7 @@
     </div>
   </div>
   <div class="rule"></div>
-  <p class="muted">
-    macOS shows a screen-sharing indicator while Nyx mirrors a window, which only happens during a share. The
-    mirror never leaves your Mac.
-  </p>
+  <p class="muted">{notes[platform]}</p>
 </div>
 
 <style>

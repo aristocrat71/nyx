@@ -12,6 +12,7 @@ export type Snapshot = {
   loadFailed: boolean;
   storePath: string;
   hotkey: string;
+  platform: "macos" | "windows" | "linux";
 };
 
 export const snapshot = () => invoke<Snapshot | null>("snapshot");

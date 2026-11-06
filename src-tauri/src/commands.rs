@@ -18,6 +18,7 @@ pub struct Snapshot {
     load_failed: bool,
     store_path: String,
     hotkey: String,
+    platform: &'static str,
 }
 
 #[derive(Serialize)]
@@ -53,6 +54,7 @@ pub fn snapshot() -> Option<Snapshot> {
         load_failed: nyx.list.load_failed,
         store_path: nyx.list.path().display().to_string(),
         hotkey: nyx.list.hotkey.label(cfg!(target_os = "macos")),
+        platform: std::env::consts::OS,
     })
 }
 
