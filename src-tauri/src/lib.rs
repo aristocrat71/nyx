@@ -7,6 +7,9 @@ mod tray;
 #[cfg(target_os = "macos")]
 #[path = "platform/macos/mod.rs"]
 mod platform;
+#[cfg(target_os = "windows")]
+#[path = "platform/windows/mod.rs"]
+mod platform;
 
 use engine::State;
 use tauri::{AppHandle, Emitter, Manager, WindowEvent};
