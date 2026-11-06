@@ -1,3 +1,5 @@
+mod site;
+
 use tauri::{Manager, WindowEvent};
 
 pub fn run() {
