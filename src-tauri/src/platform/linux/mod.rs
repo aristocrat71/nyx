@@ -161,8 +161,10 @@ pub fn exclude_window(_window: &tauri::WebviewWindow) {}
 
 pub fn exclude_tray_menu(_tray: &tauri::tray::TrayIcon) {}
 
-pub fn is_browser(_id: &str) -> bool {
-    false
+const BROWSERS: &[&str] = &["chrome", "chromium", "firefox", "brave", "opera", "vivaldi", "zen", "librewolf", "msedge"];
+
+pub fn is_browser(id: &str) -> bool {
+    BROWSERS.contains(&id)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -171,8 +173,11 @@ pub struct Tab {
     pub title: Option<String>,
 }
 
-pub fn browser_tab(_pid: i32) -> Option<Tab> {
-    None
+/// ponytail: title only, matched on the brand label. Upgrade: AT-SPI to read the address bar.
+pub fn browser_tab(pid: i32) -> Option<Tab> {
+    let x = x()?;
+    let window = *x.words(x.root, x.active, 1).first()?;
+    (x.pid_of(window) == Some(pid as u32)).then(|| Tab { host: None, title: x.title(window) })
 }
 
 pub fn has_accessibility_permission() -> bool {
@@ -187,14 +192,30 @@ pub struct Installed {
     pub path: PathBuf,
 }
 
+/// The apps with a window the window manager manages, which is what a dock would show.
 pub fn pickable() -> Vec<Installed> {
-    vec![]
+    let Some(x) = x() else { return vec![] };
+    let mut apps: Vec<Installed> = Vec::new();
+    let pids = x.words(x.root, x.clients, 4096).into_iter().filter_map(|w| x.pid_of(w));
+    for app in pids.filter(|p| *p != std::process::id()).filter_map(app_for_pid) {
+        if !apps.iter().any(|a| a.id == app.id) {
+            apps.extend(app.path.map(|path| Installed { id: app.id, name: app.name, path }));
+        }
+    }
+    apps.sort_by_key(|a| a.name.to_lowercase());
+    apps
 }
 
-pub fn app_at(_path: &Path) -> Option<Installed> {
-    None
+pub fn app_at(path: &Path) -> Option<Installed> {
+    path.is_file().then_some(())?;
+    Some(Installed {
+        id: path.file_name()?.to_string_lossy().to_lowercase(),
+        name: path.file_stem()?.to_string_lossy().into_owned(),
+        path: path.into(),
+    })
 }
 
+/// ponytail: no icons on Linux yet. Upgrade: read the window's _NET_WM_ICON.
 pub fn icon_png(_path: &Path) -> Option<Vec<u8>> {
     None
 }
