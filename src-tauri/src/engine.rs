@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::AppHandle;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -16,8 +16,17 @@ pub enum State {
     Blind,
 }
 
+pub enum MirrorEvent {
+    Running,
+    NoPermission,
+    Failed,
+    UserStopped,
+}
+
 const RESNAP: Duration = Duration::from_millis(16);
 const CAPTURE_POLL: Duration = Duration::from_secs(1);
+const MIN_RETRY: Duration = Duration::from_millis(500);
+const MAX_RETRY: Duration = Duration::from_secs(30);
 
 pub struct Nyx {
     pub list: ProtectionList,
@@ -25,6 +34,8 @@ pub struct Nyx {
     engaged: Option<i32>,
     covers: platform::Placeholders,
     pub mirror: platform::Mirror,
+    retry_at: Option<Instant>,
+    retry_delay: Duration,
     capturing: bool,
 }
 
@@ -55,6 +66,8 @@ pub fn start(app: AppHandle, list: ProtectionList) {
             engaged: None,
             covers: Default::default(),
             mirror: Default::default(),
+            retry_at: None,
+            retry_delay: MIN_RETRY,
             capturing: platform::capturing(),
         })
     });
@@ -84,6 +97,10 @@ impl Nyx {
     fn tick(&mut self) {
         if let Some(pid) = self.engaged {
             self.resnap(pid);
+            if self.retry_at.is_some_and(|at| Instant::now() >= at) {
+                self.retry_at = None;
+                self.mirror.start(pid);
+            }
         }
         if platform::capturing() != self.capturing {
             self.evaluate();
@@ -128,6 +145,8 @@ impl Nyx {
 
     fn tear_down(&mut self) {
         self.engaged = None;
+        self.retry_at = None;
+        self.retry_delay = MIN_RETRY;
         self.mirror.stop();
         self.covers.clear();
     }
@@ -137,6 +156,37 @@ impl Nyx {
         let targets = platform::windows_of(pid);
         self.covers.cover(&targets);
         self.mirror.restack(&targets);
+    }
+
+    pub fn mirror_event(&mut self, event: MirrorEvent) {
+        if self.engaged.is_none() {
+            return;
+        }
+        if let MirrorEvent::Running = event {
+            self.retry_delay = MIN_RETRY;
+            return self.publish(State::Active);
+        }
+        self.publish(State::Blind);
+        self.mirror.stop();
+        match event {
+            // An explicit click on the system "Stop Sharing" is the one thing allowed to drop protection.
+            MirrorEvent::UserStopped => {
+                log::error!("capture stopped from system UI, protection off");
+                self.list.enabled = false;
+                self.evaluate();
+            }
+            MirrorEvent::NoPermission => {
+                crate::permission_lost();
+                self.schedule_retry();
+            }
+            _ => self.schedule_retry(),
+        }
+    }
+
+    /// Backoff, not a tight loop: the covers stay up between attempts, so a failing stream never strobes.
+    fn schedule_retry(&mut self) {
+        self.retry_at = Some(Instant::now() + self.retry_delay);
+        self.retry_delay = (self.retry_delay * 2).min(MAX_RETRY);
     }
 
     fn publish(&mut self, state: State) {

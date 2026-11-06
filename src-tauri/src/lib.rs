@@ -25,6 +25,10 @@ fn state_changed(state: State) {
     log::debug!("state {state:?}");
 }
 
+fn permission_lost() {
+    log::error!("screen recording permission lost");
+}
+
 pub fn run() {
     let _ = log::set_logger(&StderrLog);
     // Routine activity says which app is open and when, so release builds keep errors only.
