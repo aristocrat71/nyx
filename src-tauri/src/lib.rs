@@ -83,8 +83,12 @@ pub fn run() {
             if let Err(e) = shortcut.map(|s| app.global_shortcut().register(s)).transpose() {
                 log::error!("hotkey registration failed: {e}");
             }
+            // Otherwise Nyx starts quietly in the tray: the dashboard opens only when it needs the user.
+            let needs_user = !platform::has_screen_permission() || list.load_failed || list.apps.is_empty();
             engine::start(app.handle().clone(), list);
-            show_dashboard(app.handle());
+            if needs_user {
+                show_dashboard(app.handle());
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
