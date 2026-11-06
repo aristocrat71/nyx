@@ -7,9 +7,69 @@ pub use overlay::{windows_of, Placeholders};
 
 use crate::store::ProtectedApp;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
+use x11rb::connection::Connection;
+use x11rb::protocol::xproto::{Atom, AtomEnum, ChangeWindowAttributesAux, ConnectionExt, EventMask, Window};
+use x11rb::protocol::Event;
+use x11rb::rust_connection::RustConnection;
 
 // Linux: X11 only. No X11 API can keep a window out of a capture, so Nyx covers protected apps
 // for the user too, and it cannot tell a share apart from no share, so it always covers.
+
+pub(super) struct X {
+    pub conn: RustConnection,
+    pub root: Window,
+    pub depth: u8,
+    active: Atom,
+    pid: Atom,
+    clients: Atom,
+    name: Atom,
+    utf8: Atom,
+}
+
+fn wayland() -> bool {
+    std::env::var("XDG_SESSION_TYPE").is_ok_and(|s| s == "wayland")
+}
+
+/// None in a Wayland session: XWayland only sees X clients, so covering would be wrong both ways.
+pub(super) fn x() -> Option<&'static X> {
+    static X11: OnceLock<Option<X>> = OnceLock::new();
+    X11.get_or_init(|| {
+        if wayland() {
+            return None;
+        }
+        let (conn, screen) = x11rb::connect(None).ok()?;
+        let (root, depth) = (conn.setup().roots[screen].root, conn.setup().roots[screen].root_depth);
+        let atom = |name: &str| conn.intern_atom(false, name.as_bytes()).ok()?.reply().ok().map(|r| r.atom);
+        Some(X {
+            active: atom("_NET_ACTIVE_WINDOW")?,
+            pid: atom("_NET_WM_PID")?,
+            clients: atom("_NET_CLIENT_LIST")?,
+            name: atom("_NET_WM_NAME")?,
+            utf8: atom("UTF8_STRING")?,
+            conn,
+            root,
+            depth,
+        })
+    })
+    .as_ref()
+}
+
+impl X {
+    fn words(&self, window: Window, property: Atom, count: u32) -> Vec<u32> {
+        let reply = self.conn.get_property(false, window, property, AtomEnum::ANY, 0, count).ok().and_then(|c| c.reply().ok());
+        reply.and_then(|r| r.value32().map(|v| v.collect())).unwrap_or_default()
+    }
+
+    pub(super) fn pid_of(&self, window: Window) -> Option<u32> {
+        self.words(window, self.pid, 1).first().copied()
+    }
+
+    fn title(&self, window: Window) -> Option<String> {
+        let reply = self.conn.get_property(false, window, self.name, self.utf8, 0, 1024).ok()?.reply().ok()?;
+        (!reply.value.is_empty()).then(|| String::from_utf8_lossy(&reply.value).into_owned())
+    }
+}
 
 #[derive(Clone)]
 pub struct App {
@@ -19,15 +79,42 @@ pub struct App {
     pub path: Option<PathBuf>,
 }
 
+fn app_for_pid(pid: u32) -> Option<App> {
+    let path = std::fs::read_link(format!("/proc/{pid}/exe")).ok()?;
+    let id = path.file_name()?.to_string_lossy().to_lowercase();
+    let name = path.file_stem()?.to_string_lossy().into_owned();
+    Some(App { pid: pid as i32, id, name, path: Some(path) })
+}
+
 pub fn frontmost() -> Option<App> {
-    None
+    let x = x()?;
+    let window = *x.words(x.root, x.active, 1).first()?;
+    let pid = x.pid_of(window).filter(|p| *p != std::process::id())?;
+    app_for_pid(pid)
 }
 
 pub fn protectable() -> Option<App> {
     frontmost()
 }
 
-pub fn observe(_app_changed: fn(), _screens_changed: fn()) {}
+/// The window manager announces every focus change on the root window's active-window property.
+pub fn observe(app_changed: fn(), _screens_changed: fn()) {
+    let Some(x) = x() else { return };
+    let active = x.active;
+    std::thread::spawn(move || {
+        let Ok((conn, screen)) = x11rb::connect(None) else { return };
+        let root = conn.setup().roots[screen].root;
+        let mask = ChangeWindowAttributesAux::new().event_mask(EventMask::PROPERTY_CHANGE);
+        if conn.change_window_attributes(root, &mask).is_err() || conn.flush().is_err() {
+            return;
+        }
+        while let Ok(event) = conn.wait_for_event() {
+            if matches!(event, Event::PropertyNotify(e) if e.atom == active) {
+                app_changed();
+            }
+        }
+    });
+}
 
 pub fn observe_capture(_changed: fn()) {}
 
@@ -37,7 +124,11 @@ pub fn capturing() -> bool {
 }
 
 pub fn notice() -> Option<&'static str> {
-    Some("Linux cannot hide a window from a capture or tell when one runs, so protected apps are covered for you too, whenever they are in front.")
+    Some(if x().is_some() {
+        "Linux cannot hide a window from a capture or tell when one runs, so protected apps are covered for you too, whenever they are in front."
+    } else {
+        "Nyx cannot see or cover other windows in a Wayland session. Log in with an X11 session to use it."
+    })
 }
 
 pub fn dark_menu_bar() -> bool {
