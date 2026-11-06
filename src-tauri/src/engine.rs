@@ -102,7 +102,10 @@ impl Nyx {
             self.last_tab = None;
         }
         match front.filter(|app| self.list.contains(&app.id) || (watch_tab && self.front_tab_protected(app.pid))) {
-            Some(app) => self.engage(app.pid),
+            Some(app) => {
+                platform::check_identity(&app, &self.list);
+                self.engage(app.pid);
+            }
             None => self.disengage(),
         }
         self.set_period();

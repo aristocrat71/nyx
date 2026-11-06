@@ -9,10 +9,12 @@ use std::ffi::{c_char, c_void, CStr};
 use std::sync::OnceLock;
 
 mod browser;
+mod identity;
 mod mirror;
 mod overlay;
 
 pub use browser::{browser_tab, is_browser, Tab};
+pub use identity::check_identity;
 pub use mirror::Mirror;
 pub use overlay::{windows_of, Placeholders};
 
