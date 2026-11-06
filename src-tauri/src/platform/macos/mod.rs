@@ -8,9 +8,11 @@ use objc2_foundation::{NSNotificationCenter, NSOperationQueue};
 use std::ffi::{c_char, c_void, CStr};
 use std::sync::OnceLock;
 
+mod browser;
 mod mirror;
 mod overlay;
 
+pub use browser::{browser_tab, is_browser, Tab};
 pub use mirror::Mirror;
 pub use overlay::{windows_of, Placeholders};
 

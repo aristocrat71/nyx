@@ -24,6 +24,7 @@ pub enum MirrorEvent {
 }
 
 const RESNAP: Duration = Duration::from_millis(16);
+const TAB_POLL: Duration = Duration::from_millis(350);
 const CAPTURE_POLL: Duration = Duration::from_secs(1);
 const MIN_RETRY: Duration = Duration::from_millis(500);
 const MAX_RETRY: Duration = Duration::from_secs(30);
@@ -37,6 +38,9 @@ pub struct Nyx {
     retry_at: Option<Instant>,
     retry_delay: Duration,
     capturing: bool,
+    tab_pid: Option<i32>,
+    last_tab: Option<platform::Tab>,
+    next_tab_check: Instant,
 }
 
 thread_local! {
@@ -69,6 +73,9 @@ pub fn start(app: AppHandle, list: ProtectionList) {
             retry_at: None,
             retry_delay: MIN_RETRY,
             capturing: platform::capturing(),
+            tab_pid: None,
+            last_tab: None,
+            next_tab_check: Instant::now(),
         })
     });
     let _ = APP.set(app);
@@ -87,11 +94,27 @@ impl Nyx {
     pub fn evaluate(&mut self) {
         self.capturing = platform::capturing();
         let front = platform::frontmost().filter(|_| self.list.enabled && self.capturing);
-        match front.filter(|app| self.list.contains(&app.id)) {
+        let watch_tab = front.as_ref().is_some_and(|app| {
+            !self.list.contains(&app.id) && !self.list.sites.is_empty() && platform::is_browser(&app.id)
+        });
+        self.tab_pid = if watch_tab { front.as_ref().map(|a| a.pid) } else { None };
+        if !watch_tab {
+            self.last_tab = None;
+        }
+        match front.filter(|app| self.list.contains(&app.id) || (watch_tab && self.front_tab_protected(app.pid))) {
             Some(app) => self.engage(app.pid),
             None => self.disengage(),
         }
         self.set_period();
+    }
+
+    fn front_tab_protected(&mut self, pid: i32) -> bool {
+        self.last_tab = platform::browser_tab(pid);
+        let Some(tab) = &self.last_tab else { return false };
+        match &tab.host {
+            Some(host) => self.list.sites.iter().any(|s| s.matches_host(host)),
+            None => tab.title.as_ref().is_some_and(|t| self.list.sites.iter().any(|s| s.matches_title(t))),
+        }
     }
 
     fn tick(&mut self) {
@@ -102,13 +125,25 @@ impl Nyx {
                 self.mirror.start(pid);
             }
         }
-        if platform::capturing() != self.capturing {
+        let tab_changed = self.tab_pid.is_some_and(|pid| {
+            Instant::now() >= self.next_tab_check && {
+                self.next_tab_check = Instant::now() + TAB_POLL;
+                platform::browser_tab(pid) != self.last_tab
+            }
+        });
+        if tab_changed || platform::capturing() != self.capturing {
             self.evaluate();
         }
     }
 
     fn set_period(&self) {
-        let period = if self.engaged.is_some() { RESNAP } else { CAPTURE_POLL };
+        let period = if self.engaged.is_some() {
+            RESNAP
+        } else if self.tab_pid.is_some() {
+            TAB_POLL
+        } else {
+            CAPTURE_POLL
+        };
         PERIOD_MS.store(period.as_millis() as u64, Ordering::Relaxed);
     }
 
