@@ -1,5 +1,5 @@
-use objc2_application_services::{AXError, AXIsProcessTrusted, AXUIElement};
-use objc2_core_foundation::{kCFBooleanTrue, CFArray, CFRetained, CFString, CFType, CFURL};
+use objc2_application_services::{AXError, AXIsProcessTrusted, AXIsProcessTrustedWithOptions, AXUIElement};
+use objc2_core_foundation::{kCFBooleanTrue, CFArray, CFDictionary, CFRetained, CFString, CFType, CFURL};
 use objc2_foundation::{NSString, NSURL};
 use std::collections::VecDeque;
 use std::ptr::NonNull;
@@ -29,6 +29,15 @@ pub struct Tab {
 
 pub fn has_accessibility_permission() -> bool {
     unsafe { AXIsProcessTrusted() }
+}
+
+/// Asks once with the system prompt, then opens the pane in case the prompt was dismissed before.
+pub fn open_accessibility_settings() {
+    let key = CFString::from_str("AXTrustedCheckOptionPrompt");
+    let yes = unsafe { kCFBooleanTrue }.expect("CFBoolean true exists");
+    let options = CFDictionary::from_slices(&[&*key], &[yes]);
+    unsafe { AXIsProcessTrustedWithOptions(Some(options.as_opaque())) };
+    super::open_url("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility");
 }
 
 /// Reads are given far less than the 6 s default, so a hung browser never stalls the main thread.

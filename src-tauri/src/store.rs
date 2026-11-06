@@ -73,6 +73,20 @@ impl HotkeySpec {
         }
         self.is_well_formed().then(|| Shortcut::new(Some(mods), code))
     }
+
+    /// "⌃⇧L" on macOS, "Ctrl+Shift+L" elsewhere.
+    pub fn label(&self, mac: bool) -> String {
+        let key = KEYS.iter().find(|(k, _)| *k == self.key_code).map_or("?".into(), |(_, c)| {
+            c.to_string().trim_start_matches("Key").trim_start_matches("Digit").to_string()
+        });
+        let mods = [(CONTROL, "⌃", "Ctrl"), (OPTION, "⌥", "Alt"), (SHIFT, "⇧", "Shift"), (CMD, "⌘", "Super")];
+        let held = mods.iter().filter(|(bit, ..)| self.carbon_modifiers & bit != 0);
+        if mac {
+            held.map(|(_, sym, _)| *sym).collect::<String>() + &key
+        } else {
+            held.map(|(.., name)| format!("{name}+")).collect::<String>() + &key
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -269,6 +283,8 @@ mod tests {
         let standard = HotkeySpec::STANDARD.shortcut().unwrap();
         assert_eq!(standard, Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyL));
         assert_eq!(HotkeySpec { key_code: 122, carbon_modifiers: CONTROL }.shortcut(), None);
+        assert_eq!(HotkeySpec::STANDARD.label(true), "⌃⇧L");
+        assert_eq!(HotkeySpec::STANDARD.label(false), "Ctrl+Shift+L");
     }
 
     #[test]

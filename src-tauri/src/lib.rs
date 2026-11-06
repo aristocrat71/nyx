@@ -1,3 +1,4 @@
+mod commands;
 mod engine;
 mod site;
 mod store;
@@ -8,7 +9,7 @@ mod tray;
 mod platform;
 
 use engine::State;
-use tauri::{AppHandle, Manager, WindowEvent};
+use tauri::{AppHandle, Emitter, Manager, WindowEvent};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 struct StderrLog;
@@ -30,6 +31,7 @@ fn state_changed(state: State) {
 
 fn changed(nyx: &engine::Nyx) {
     tray::refresh(engine::app(), nyx);
+    let _ = engine::app().emit("changed", ());
 }
 
 fn show_dashboard(app: &AppHandle) {
@@ -57,9 +59,19 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(hotkey.build())
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
+        .invoke_handler(tauri::generate_handler![
+            commands::snapshot,
+            commands::pickable,
+            commands::add_app,
+            commands::remove_app,
+            commands::add_site,
+            commands::remove_site,
+            commands::open_link,
+        ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            platform::request_screen_permission();
             let path = app.path().config_dir()?.join("Nyx/protected.json");
             if let Some(dashboard) = app.get_webview_window("dashboard") {
                 platform::exclude_window(&dashboard);

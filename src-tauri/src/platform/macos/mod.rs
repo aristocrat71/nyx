@@ -3,8 +3,8 @@ use objc2_app_kit::{
     NSApplicationDidChangeScreenParametersNotification, NSRunningApplication, NSWorkspace,
     NSWorkspaceDidActivateApplicationNotification, NSWorkspaceDidTerminateApplicationNotification,
 };
-use objc2_core_graphics::CGPreflightScreenCaptureAccess;
-use objc2_foundation::{NSNotificationCenter, NSOperationQueue, NSString, NSUserDefaults};
+use objc2_core_graphics::{CGPreflightScreenCaptureAccess, CGRequestScreenCaptureAccess};
+use objc2_foundation::{NSNotificationCenter, NSOperationQueue, NSString, NSURL, NSUserDefaults};
 use std::ffi::{c_char, c_void, CStr};
 use std::path::PathBuf;
 use std::sync::OnceLock;
@@ -16,8 +16,8 @@ mod identity;
 mod mirror;
 mod overlay;
 
-pub use apps::{app_at, icon_png, pickable, protected_icon, Installed};
-pub use browser::{browser_tab, is_browser, Tab};
+pub use apps::{app_at, icon_png, pickable, protected_icon};
+pub use browser::{browser_tab, has_accessibility_permission, is_browser, open_accessibility_settings, Tab};
 pub use exclusion::{exclude_tray_menu, exclude_window};
 pub use identity::{check_identity, designated_requirement};
 pub use mirror::Mirror;
@@ -120,10 +120,6 @@ pub fn capturing() -> bool {
     skylight().is_none_or(|sl| (sl.is_watched)())
 }
 
-pub fn capture_gate_available() -> bool {
-    skylight().is_some()
-}
-
 /// The menu bar follows the system appearance, which the dashboard's own setting never touches.
 pub fn dark_menu_bar() -> bool {
     let style = NSUserDefaults::standardUserDefaults().stringForKey(&NSString::from_str("AppleInterfaceStyle"));
@@ -132,4 +128,21 @@ pub fn dark_menu_bar() -> bool {
 
 pub fn has_screen_permission() -> bool {
     CGPreflightScreenCaptureAccess()
+}
+
+pub fn request_screen_permission() {
+    if !has_screen_permission() {
+        log::error!("screen recording permission missing, requesting");
+        CGRequestScreenCaptureAccess();
+    }
+}
+
+pub fn open_screen_settings() {
+    open_url("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture");
+}
+
+pub fn open_url(url: &str) {
+    if let Some(url) = NSURL::URLWithString(&NSString::from_str(url)) {
+        NSWorkspace::sharedWorkspace().openURL(&url);
+    }
 }
