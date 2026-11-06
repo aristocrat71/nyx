@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "nyx-app",
-  "version": "0.1.0",
-  "identifier": "com.unravel.nyx-app",
+  "productName": "Nyx",
+  "version": "0.2.0",
+  "identifier": "tech.unravel.nyx",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -12,24 +12,40 @@
   "app": {
     "windows": [
       {
-        "title": "nyx-app",
-        "width": 800,
-        "height": 600
+        "label": "dashboard",
+        "title": "Nyx",
+        "width": 420,
+        "height": 540,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "visible": false,
+        "center": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "backgroundColor": "#0E0F12"
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src ipc: http://ipc.localhost"
     }
   },
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Utility",
+    "copyright": "Unravel",
+    "shortDescription": "Share your screen, not everything on it.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "macOS": {
+      "minimumSystemVersion": "14.0",
+      "hardenedRuntime": true
+    }
   }
 }

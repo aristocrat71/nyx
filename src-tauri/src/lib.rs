@@ -1,14 +1,22 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+use tauri::{Manager, WindowEvent};
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .setup(|app| {
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            if let Some(dashboard) = app.get_webview_window("dashboard") {
+                dashboard.show()?;
+            }
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            // The dashboard closes to the tray: hidden, never destroyed.
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        })
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("error while running Nyx");
 }
