@@ -9,6 +9,7 @@ mod platform;
 
 use engine::State;
 use tauri::{AppHandle, Manager, WindowEvent};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 struct StderrLog;
 
@@ -47,13 +48,25 @@ pub fn run() {
     // Routine activity says which app is open and when, so release builds keep errors only.
     log::set_max_level(if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Error });
 
+    let hotkey = tauri_plugin_global_shortcut::Builder::new().with_handler(|_, _, event| {
+        if event.state == ShortcutState::Pressed {
+            engine::post(engine::Nyx::toggle_front);
+        }
+    });
+
     tauri::Builder::default()
+        .plugin(hotkey.build())
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let path = app.path().config_dir()?.join("Nyx/protected.json");
             tray::build(app.handle())?;
-            engine::start(app.handle().clone(), store::ProtectionList::load(path));
+            let list = store::ProtectionList::load(path);
+            let shortcut = list.hotkey.shortcut().or(store::HotkeySpec::STANDARD.shortcut());
+            if let Err(e) = shortcut.map(|s| app.global_shortcut().register(s)).transpose() {
+                log::error!("hotkey registration failed: {e}");
+            }
+            engine::start(app.handle().clone(), list);
             show_dashboard(app.handle());
             Ok(())
         })

@@ -1,5 +1,6 @@
 use crate::site::ProtectedSite;
 use serde::{Deserialize, Serialize};
+use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
 use std::{fs, io, path::{Path, PathBuf}};
 
 const MAX_APPS: usize = 200;
@@ -47,6 +48,30 @@ impl HotkeySpec {
         self.key_code < 128
             && self.carbon_modifiers & !(CMD | SHIFT | OPTION | CONTROL) == 0
             && self.carbon_modifiers & (CMD | OPTION | CONTROL) != 0
+    }
+}
+
+/// Carbon virtual key codes for letters and digits; a stored key outside them falls back to the default.
+const KEYS: &[(u32, Code)] = &[
+    (0, Code::KeyA), (11, Code::KeyB), (8, Code::KeyC), (2, Code::KeyD), (14, Code::KeyE), (3, Code::KeyF),
+    (5, Code::KeyG), (4, Code::KeyH), (34, Code::KeyI), (38, Code::KeyJ), (40, Code::KeyK), (37, Code::KeyL),
+    (46, Code::KeyM), (45, Code::KeyN), (31, Code::KeyO), (35, Code::KeyP), (12, Code::KeyQ), (15, Code::KeyR),
+    (1, Code::KeyS), (17, Code::KeyT), (32, Code::KeyU), (9, Code::KeyV), (13, Code::KeyW), (7, Code::KeyX),
+    (16, Code::KeyY), (6, Code::KeyZ), (29, Code::Digit0), (18, Code::Digit1), (19, Code::Digit2),
+    (20, Code::Digit3), (21, Code::Digit4), (23, Code::Digit5), (22, Code::Digit6), (26, Code::Digit7),
+    (28, Code::Digit8), (25, Code::Digit9),
+];
+
+impl HotkeySpec {
+    pub fn shortcut(&self) -> Option<Shortcut> {
+        let code = KEYS.iter().find(|(k, _)| *k == self.key_code)?.1;
+        let mut mods = Modifiers::empty();
+        for (bit, m) in [(CMD, Modifiers::SUPER), (SHIFT, Modifiers::SHIFT), (OPTION, Modifiers::ALT), (CONTROL, Modifiers::CONTROL)] {
+            if self.carbon_modifiers & bit != 0 {
+                mods |= m;
+            }
+        }
+        self.is_well_formed().then(|| Shortcut::new(Some(mods), code))
     }
 }
 
@@ -241,6 +266,9 @@ mod tests {
         for mods in [CMD, CONTROL, OPTION, CMD | SHIFT, CONTROL | SHIFT] {
             assert!(HotkeySpec { key_code: 37, carbon_modifiers: mods }.is_well_formed());
         }
+        let standard = HotkeySpec::STANDARD.shortcut().unwrap();
+        assert_eq!(standard, Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyL));
+        assert_eq!(HotkeySpec { key_code: 122, carbon_modifiers: CONTROL }.shortcut(), None);
     }
 
     #[test]
