@@ -9,12 +9,14 @@ use std::ffi::{c_char, c_void, CStr};
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
+mod apps;
 mod browser;
 mod exclusion;
 mod identity;
 mod mirror;
 mod overlay;
 
+pub use apps::{app_at, icon_png, pickable, protected_icon, Installed};
 pub use browser::{browser_tab, is_browser, Tab};
 pub use exclusion::{exclude_tray_menu, exclude_window};
 pub use identity::{check_identity, designated_requirement};
