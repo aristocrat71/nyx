@@ -8,6 +8,10 @@ use objc2_foundation::{NSNotificationCenter, NSOperationQueue};
 use std::ffi::{c_char, c_void, CStr};
 use std::sync::OnceLock;
 
+mod overlay;
+
+pub use overlay::{windows_of, Placeholders};
+
 pub struct App {
     pub pid: i32,
     pub id: String,
