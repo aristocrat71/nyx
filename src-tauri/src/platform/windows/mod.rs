@@ -1,6 +1,7 @@
 mod apps;
 mod browser;
 mod exclusion;
+#[path = "../exe_identity.rs"]
 mod identity;
 mod mirror;
 mod overlay;

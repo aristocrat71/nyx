@@ -1,8 +1,8 @@
 use super::App;
 use std::path::Path;
 
-// ponytail: pins the executable's full path, so a same-named impostor elsewhere does not match.
-// Upgrade: pin the Authenticode signer as well, for apps that update into a new folder.
+// Windows and Linux: pins the executable's full path, so a same-named impostor elsewhere does not match.
+// ponytail: upgrade to signer pinning (Authenticode, package signatures) for apps that move on update.
 
 pub fn designated_requirement(exe: &Path) -> Option<String> {
     Some(format!("path:{}", exe.to_string_lossy().to_lowercase()))
