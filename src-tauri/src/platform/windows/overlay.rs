@@ -12,7 +12,7 @@ use windows::Win32::UI::HiDpi::GetDpiForWindow;
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, EnumWindows, GetClientRect, IsIconic, IsWindowVisible, RegisterClassW,
     SetLayeredWindowAttributes, SetWindowPos, ShowWindow, HTTRANSPARENT, HWND_TOPMOST, LWA_ALPHA, SWP_NOACTIVATE,
-    SWP_SHOWWINDOW, SW_HIDE, WINDOW_EX_STYLE, WM_NCHITTEST, WM_PAINT, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE,
+    SWP_NOZORDER, SWP_SHOWWINDOW, SET_WINDOW_POS_FLAGS, SW_HIDE, WINDOW_EX_STYLE, WM_NCHITTEST, WM_PAINT, WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE,
     WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_POPUP,
 };
 
@@ -51,8 +51,9 @@ pub(super) fn overlay_window(class: windows::core::PCWSTR, extra: WINDOW_EX_STYL
         .expect("overlay window")
 }
 
-pub(super) fn place(hwnd: HWND, r: RECT) {
-    let flags = SWP_NOACTIVATE | SWP_SHOWWINDOW;
+/// Raised only when first shown: a move never reorders, so a mirror stays above the cover beneath it.
+pub(super) fn place(hwnd: HWND, r: RECT, raise: bool) {
+    let flags = SWP_NOACTIVATE | SWP_SHOWWINDOW | if raise { SET_WINDOW_POS_FLAGS(0) } else { SWP_NOZORDER };
     let _ = unsafe { SetWindowPos(hwnd, Some(HWND_TOPMOST), r.left, r.top, r.right - r.left, r.bottom - r.top, flags) };
 }
 
@@ -90,7 +91,7 @@ impl Placeholders {
             let f = t.frame;
             let want = RECT { left: f.left - b, top: f.top - b, right: f.right + b, bottom: f.bottom + b };
             if want != cover.placed {
-                place(cover.hwnd, want);
+                place(cover.hwnd, want, cover.placed == RECT::default());
                 cover.placed = want;
             }
         }
