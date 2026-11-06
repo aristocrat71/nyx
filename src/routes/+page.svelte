@@ -3,8 +3,11 @@
   import { listen } from "@tauri-apps/api/event";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import * as api from "$lib/api";
+  import AppPicker from "$lib/AppPicker.svelte";
 
   let snap = $state<api.Snapshot | null>(null);
+  let open = $state<"app" | "site" | "settings" | null>(null);
+  const close = () => (open = null);
   const refresh = async () => (snap = await api.snapshot());
   const empty = $derived(snap !== null && snap.apps.length === 0 && snap.sites.length === 0);
 
@@ -13,7 +16,8 @@
     const unlisten = listen("changed", refresh);
     // Grants arrive from System Settings, which sends no event, so they are polled while shown.
     const timer = setInterval(() => !document.hidden && refresh(), 2000);
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && getCurrentWindow().hide();
+    // Esc abandons an open panel first, and only then closes the dashboard.
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && (open ? close() : getCurrentWindow().hide());
     window.addEventListener("keydown", onKey);
     return () => {
       unlisten.then((stop) => stop());
@@ -43,6 +47,7 @@
       <div class="empty">
         <div class="owl big"></div>
         <p class="muted">Nothing protected yet.<br />Add an app, or press {snap.hotkey} while using one.</p>
+        <button class="pill" onclick={() => (open = "app")}>+ Add app…</button>
         <p class="muted small">Or cover a site whenever it is your front tab.</p>
       </div>
     {:else}
@@ -54,6 +59,7 @@
           <button class="remove" title="Stop protecting {app.name}" onclick={() => api.removeApp(app.id)}>Remove</button>
         </div>
       {/each}
+      <button class="pill add" onclick={() => (open = "app")}>+ Add app…</button>
       <div class="label section">PROTECTED SITES</div>
       {#each snap.sites as host (host)}
         <div class="row site">
@@ -63,6 +69,9 @@
       {/each}
     {/if}
   </main>
+
+  {#if open}<div class="backdrop" role="presentation" onclick={close}></div>{/if}
+  {#if open === "app"}<AppPicker exclude={snap.apps.map((a) => a.id)} onclose={close} />{/if}
 
   <div class="hr"></div>
   <footer>
@@ -103,6 +112,8 @@
   .row { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 16px; font-size: 13px; }
   .row.site { height: 32px; }
   .row:hover { background: var(--row); }
+  .add { margin: 8px 16px 0; }
+  .backdrop { position: fixed; inset: 0; z-index: 5; }
   .grow { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .icon { width: 20px; height: 20px; }
   .blank { border-radius: 5px; background: var(--control); }

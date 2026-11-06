@@ -36,3 +36,4 @@ input { font: inherit; color: var(--text); }
   position: absolute; z-index: 10; background: var(--panel); border: 1px solid var(--border);
   border-radius: 8px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
 }
+.sheet { position: fixed; top: 96px; left: 50%; transform: translateX(-50%); }
