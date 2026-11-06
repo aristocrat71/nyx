@@ -56,6 +56,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(hotkey.build())
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);

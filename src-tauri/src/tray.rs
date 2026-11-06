@@ -3,6 +3,7 @@ use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Wry};
+use tauri_plugin_autostart::ManagerExt;
 
 const IDLE: &[u8] = include_bytes!("../assets/tray/tray-idle.png");
 const ACTIVE_LIGHT: &[u8] = include_bytes!("../assets/tray/tray-active-light.png");
@@ -13,15 +14,18 @@ const BLIND_DARK: &[u8] = include_bytes!("../assets/tray/tray-blind-dark.png");
 struct Items {
     protect_app: CheckMenuItem<Wry>,
     protection: CheckMenuItem<Wry>,
+    login: CheckMenuItem<Wry>,
 }
 
 pub fn build(app: &AppHandle) -> tauri::Result<()> {
     let protect_app = CheckMenuItem::with_id(app, "protect-app", "Protect this app", false, false, None::<&str>)?;
     let protection = CheckMenuItem::with_id(app, "protection", "Protection: On", true, true, None::<&str>)?;
     let dashboard = MenuItem::with_id(app, "dashboard", "Open Dashboard", true, None::<&str>)?;
+    let at_login = app.autolaunch().is_enabled().unwrap_or(false);
+    let login = CheckMenuItem::with_id(app, "login", "Launch at Login", true, at_login, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Nyx", true, Some("CmdOrCtrl+Q"))?;
     let (sep1, sep2) = (PredefinedMenuItem::separator(app)?, PredefinedMenuItem::separator(app)?);
-    let menu = Menu::with_items(app, &[&protect_app, &sep1, &protection, &dashboard, &sep2, &quit])?;
+    let menu = Menu::with_items(app, &[&protect_app, &sep1, &protection, &dashboard, &sep2, &login, &quit])?;
     TrayIconBuilder::with_id("nyx")
         .icon(Image::from_bytes(IDLE)?)
         .icon_as_template(true)
@@ -36,12 +40,22 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
                 engine::with(|nyx| nyx.set_enabled(!nyx.list.enabled));
             }
             "dashboard" => crate::show_dashboard(app),
+            "login" => toggle_launch_at_login(app),
             "quit" => app.exit(0),
             _ => {}
         })
         .build(app)?;
-    app.manage(Items { protect_app, protection });
+    app.manage(Items { protect_app, protection, login });
     Ok(())
+}
+
+fn toggle_launch_at_login(app: &AppHandle) {
+    let launcher = app.autolaunch();
+    let on = launcher.is_enabled().unwrap_or(false);
+    if let Err(e) = if on { launcher.disable() } else { launcher.enable() } {
+        log::error!("launch at login toggle failed: {e}");
+    }
+    let _ = app.state::<Items>().login.set_checked(launcher.is_enabled().unwrap_or(false));
 }
 
 /// Idle is a template outline; engaged icons carry a dot, amber mirroring, red hidden with no preview.
