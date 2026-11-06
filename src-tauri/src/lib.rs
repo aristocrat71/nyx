@@ -27,8 +27,8 @@ fn state_changed(state: State) {
     tray::set_state(engine::app(), state);
 }
 
-fn list_changed(list: &store::ProtectionList) {
-    tray::refresh(engine::app(), list.enabled);
+fn changed(nyx: &engine::Nyx) {
+    tray::refresh(engine::app(), nyx);
 }
 
 fn show_dashboard(app: &AppHandle) {

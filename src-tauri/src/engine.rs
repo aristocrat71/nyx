@@ -32,6 +32,7 @@ const MAX_RETRY: Duration = Duration::from_secs(30);
 pub struct Nyx {
     pub list: ProtectionList,
     pub state: State,
+    pub front: Option<platform::App>,
     engaged: Option<i32>,
     covers: platform::Placeholders,
     pub mirror: platform::Mirror,
@@ -71,6 +72,7 @@ pub fn start(app: AppHandle, list: ProtectionList) {
         *cell.borrow_mut() = Some(Nyx {
             list,
             state: State::Idle,
+            front: None,
             engaged: None,
             covers: Default::default(),
             mirror: Default::default(),
@@ -96,14 +98,26 @@ impl Nyx {
     pub fn set_enabled(&mut self, enabled: bool) {
         self.list.set_enabled(enabled);
         self.evaluate();
-        crate::list_changed(&self.list);
+    }
+
+    /// Permanent, like every edit: there is one list and nothing resets after a call.
+    pub fn toggle_front(&mut self) {
+        let Some(app) = self.front.clone() else { return };
+        if self.list.contains(&app.id) {
+            self.list.remove(&app.id);
+        } else {
+            let requirement = app.path.as_deref().and_then(platform::designated_requirement);
+            self.list.add(&app.id, &app.name, requirement);
+        }
+        self.evaluate();
     }
 
     /// Keyed on the process, not a window existing yet: `tick` covers whatever is on
     /// screen each frame, so late windows need no retry.
     pub fn evaluate(&mut self) {
         self.capturing = platform::capturing();
-        let front = platform::frontmost().filter(|_| self.list.enabled && self.capturing);
+        self.front = platform::protectable();
+        let front = self.front.clone().filter(|_| self.list.enabled && self.capturing);
         let watch_tab = front.as_ref().is_some_and(|app| {
             !self.list.contains(&app.id) && !self.list.sites.is_empty() && platform::is_browser(&app.id)
         });
@@ -119,6 +133,7 @@ impl Nyx {
             None => self.disengage(),
         }
         self.set_period();
+        crate::changed(self);
     }
 
     fn front_tab_protected(&mut self, pid: i32) -> bool {

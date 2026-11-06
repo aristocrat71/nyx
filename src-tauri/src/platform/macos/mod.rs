@@ -6,6 +6,7 @@ use objc2_app_kit::{
 use objc2_core_graphics::CGPreflightScreenCaptureAccess;
 use objc2_foundation::{NSNotificationCenter, NSOperationQueue, NSString, NSUserDefaults};
 use std::ffi::{c_char, c_void, CStr};
+use std::path::PathBuf;
 use std::sync::OnceLock;
 
 mod browser;
@@ -14,14 +15,16 @@ mod mirror;
 mod overlay;
 
 pub use browser::{browser_tab, is_browser, Tab};
-pub use identity::check_identity;
+pub use identity::{check_identity, designated_requirement};
 pub use mirror::Mirror;
 pub use overlay::{windows_of, Placeholders};
 
+#[derive(Clone)]
 pub struct App {
     pub pid: i32,
     pub id: String,
     pub name: String,
+    pub path: Option<PathBuf>,
 }
 
 pub fn frontmost() -> Option<App> {
@@ -32,7 +35,13 @@ pub fn frontmost() -> Option<App> {
     }
     let id = app.bundleIdentifier()?.to_string();
     let name = app.localizedName().map_or_else(|| id.clone(), |n| n.to_string());
-    Some(App { pid, id, name })
+    let path = app.bundleURL().and_then(|u| u.to_file_path());
+    Some(App { pid, id, name, path })
+}
+
+/// What the tray item and the hotkey act on. Finder is out because it owns the desktop.
+pub fn protectable() -> Option<App> {
+    frontmost().filter(|app| app.id != "com.apple.finder")
 }
 
 /// `app_changed` on every app switch or quit, `screens_changed` when displays change.

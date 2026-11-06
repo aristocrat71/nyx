@@ -1,4 +1,4 @@
-use crate::engine::{self, State};
+use crate::engine::{self, Nyx, State};
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
@@ -11,15 +11,17 @@ const BLIND_LIGHT: &[u8] = include_bytes!("../assets/tray/tray-blind-light.png")
 const BLIND_DARK: &[u8] = include_bytes!("../assets/tray/tray-blind-dark.png");
 
 struct Items {
+    protect_app: CheckMenuItem<Wry>,
     protection: CheckMenuItem<Wry>,
 }
 
 pub fn build(app: &AppHandle) -> tauri::Result<()> {
+    let protect_app = CheckMenuItem::with_id(app, "protect-app", "Protect this app", false, false, None::<&str>)?;
     let protection = CheckMenuItem::with_id(app, "protection", "Protection: On", true, true, None::<&str>)?;
     let dashboard = MenuItem::with_id(app, "dashboard", "Open Dashboard", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Nyx", true, Some("CmdOrCtrl+Q"))?;
-    let separator = PredefinedMenuItem::separator(app)?;
-    let menu = Menu::with_items(app, &[&protection, &dashboard, &separator, &quit])?;
+    let (sep1, sep2) = (PredefinedMenuItem::separator(app)?, PredefinedMenuItem::separator(app)?);
+    let menu = Menu::with_items(app, &[&protect_app, &sep1, &protection, &dashboard, &sep2, &quit])?;
     TrayIconBuilder::with_id("nyx")
         .icon(Image::from_bytes(IDLE)?)
         .icon_as_template(true)
@@ -27,6 +29,9 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
         .menu(&menu)
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| match event.id().as_ref() {
+            "protect-app" => {
+                engine::with(|nyx| nyx.toggle_front());
+            }
             "protection" => {
                 engine::with(|nyx| nyx.set_enabled(!nyx.list.enabled));
             }
@@ -35,7 +40,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
             _ => {}
         })
         .build(app)?;
-    app.manage(Items { protection });
+    app.manage(Items { protect_app, protection });
     Ok(())
 }
 
@@ -53,8 +58,34 @@ pub fn set_state(app: &AppHandle, state: State) {
     let _ = tray.set_tooltip(Some(tip));
 }
 
-pub fn refresh(app: &AppHandle, enabled: bool) {
-    let items = app.state::<Items>();
+pub fn refresh(app: &AppHandle, nyx: &Nyx) {
+    let Some(items) = app.try_state::<Items>() else { return };
+    let front = nyx.front.as_ref();
+    let _ = items.protect_app.set_text(front.map_or("Protect this app".into(), |a| format!("Protect {}", display_name(&a.name))));
+    let _ = items.protect_app.set_enabled(front.is_some());
+    let _ = items.protect_app.set_checked(front.is_some_and(|a| nyx.list.contains(&a.id)));
+    let enabled = nyx.list.enabled;
     let _ = items.protection.set_checked(enabled);
     let _ = items.protection.set_text(if enabled { "Protection: On" } else { "Protection: Off" });
+}
+
+/// A menu title, so cut to one line: the name is whatever the other app's Info.plist says.
+fn display_name(raw: &str) -> String {
+    let line = raw.lines().next().unwrap_or("").trim();
+    match line.chars().count() {
+        0 => "this app".into(),
+        n if n > 32 => format!("{}…", line.chars().take(32).collect::<String>().trim_end()),
+        _ => line.into(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn display_name_is_one_short_line() {
+        assert_eq!(super::display_name("Mail"), "Mail");
+        assert_eq!(super::display_name("  \n"), "this app");
+        assert_eq!(super::display_name("Evil\nSecond line"), "Evil");
+        assert_eq!(super::display_name(&"x".repeat(40)), format!("{}…", "x".repeat(32)));
+    }
 }
