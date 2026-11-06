@@ -1,5 +1,6 @@
 use crate::site::ProtectedSite;
 use serde::{Deserialize, Serialize};
+use std::{fs, io, path::{Path, PathBuf}};
 
 const MAX_APPS: usize = 200;
 const MAX_SITES: usize = 200;
@@ -86,6 +87,110 @@ pub fn decode(data: &[u8]) -> Loaded {
     }
 }
 
+pub struct ProtectionList {
+    pub apps: Vec<ProtectedApp>,
+    pub sites: Vec<ProtectedSite>,
+    pub hotkey: HotkeySpec,
+    pub enabled: bool,
+    /// The unreadable file is left for the user to recover; the dashboard says so.
+    pub load_failed: bool,
+    path: PathBuf,
+}
+
+impl ProtectionList {
+    pub fn load(path: PathBuf) -> Self {
+        tighten(&path);
+        let loaded = match fs::read(&path) {
+            Ok(data) => decode(&data),
+            Err(_) => Loaded::default(),
+        };
+        if loaded.failed {
+            log::error!("could not decode protected.json");
+        } else if loaded.dropped > 0 {
+            log::error!("dropped {} malformed entries", loaded.dropped);
+        }
+        ProtectionList {
+            apps: loaded.apps,
+            sites: loaded.sites,
+            hotkey: loaded.hotkey.unwrap_or(HotkeySpec::STANDARD),
+            enabled: true,
+            load_failed: loaded.failed,
+            path,
+        }
+    }
+
+    pub fn contains(&self, id: &str) -> bool {
+        self.apps.iter().any(|a| a.id == id)
+    }
+
+    pub fn add(&mut self, id: &str, name: &str, requirement: Option<String>) {
+        let app = ProtectedApp { id: id.into(), name: name.chars().take(MAX_NAME).collect(), requirement };
+        if !self.contains(id) && app.is_well_formed() && self.apps.len() < MAX_APPS {
+            self.apps.push(app);
+            self.save();
+        }
+    }
+
+    pub fn remove(&mut self, id: &str) {
+        self.apps.retain(|a| a.id != id);
+        self.save();
+    }
+
+    /// Returns the stored form, so the field can show what it kept.
+    pub fn add_site(&mut self, raw: &str) -> Option<String> {
+        let host = ProtectedSite::normalize(raw)?;
+        if self.sites.iter().any(|s| s.host == host) || self.sites.len() >= MAX_SITES {
+            return None;
+        }
+        self.sites.push(ProtectedSite { host: host.clone() });
+        self.sites.sort_by(|a, b| a.host.cmp(&b.host));
+        self.save();
+        Some(host)
+    }
+
+    pub fn remove_site(&mut self, host: &str) {
+        self.sites.retain(|s| s.host != host);
+        self.save();
+    }
+
+    fn save(&mut self) {
+        let file = File {
+            apps: self.apps.clone(),
+            hotkey: Some(self.hotkey),
+            protection_enabled: Some(self.enabled),
+            sites: Some(self.sites.clone()),
+        };
+        match write_private(&self.path, &serde_json::to_vec_pretty(&file).expect("plain data serializes")) {
+            Ok(()) => self.load_failed = false,
+            Err(e) => log::error!("could not save protected.json: {e}"),
+        }
+    }
+}
+
+/// Atomic, and owner-only on unix: which apps are protected is itself private.
+fn write_private(path: &Path, data: &[u8]) -> io::Result<()> {
+    let dir = path.parent().expect("file path has a parent");
+    fs::create_dir_all(dir)?;
+    let tmp = path.with_extension("json.tmp");
+    fs::write(&tmp, data)?;
+    tighten(&tmp);
+    fs::rename(&tmp, path)?;
+    tighten(path);
+    Ok(())
+}
+
+/// Also run on launch, so files from installs that wrote them world-readable get fixed.
+fn tighten(path: &Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Some(dir) = path.parent() {
+            let _ = fs::set_permissions(dir, fs::Permissions::from_mode(0o700));
+        }
+        let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -131,5 +236,24 @@ mod tests {
         for mods in [CMD, CONTROL, OPTION, CMD | SHIFT, CONTROL | SHIFT] {
             assert!(HotkeySpec { key_code: 37, carbon_modifiers: mods }.is_well_formed());
         }
+    }
+
+    #[test]
+    fn saves_round_trip_owner_only() {
+        let dir = std::env::temp_dir().join(format!("nyx-store-{}", std::process::id()));
+        let path = dir.join("Nyx/protected.json");
+        let mut list = ProtectionList::load(path.clone());
+        list.add("com.apple.TextEdit", "TextEdit", None);
+        assert_eq!(list.add_site("https://www.YouTube.com/watch").as_deref(), Some("youtube.com"));
+        list.enabled = false;
+        list.remove_site("nothing.com");
+        let again = ProtectionList::load(path.clone());
+        assert_eq!((again.apps.len(), again.sites.len(), again.enabled), (1, 1, true));
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
+        }
+        let _ = fs::remove_dir_all(dir);
     }
 }
