@@ -5,10 +5,18 @@
   import * as api from "$lib/api";
   import AppPicker from "$lib/AppPicker.svelte";
   import SiteEntry from "$lib/SiteEntry.svelte";
+  import Settings from "$lib/Settings.svelte";
 
   let snap = $state<api.Snapshot | null>(null);
   let open = $state<"app" | "site" | "settings" | null>(null);
   const close = () => (open = null);
+  // Starts on whatever the system is set to, then follows the settings switch.
+  let dark = $state(JSON.parse(localStorage.getItem("nyx.dark") ?? String(matchMedia("(prefers-color-scheme: dark)").matches)));
+  $effect(() => {
+    localStorage.setItem("nyx.dark", String(dark));
+    document.documentElement.classList.toggle("dark", dark);
+    getCurrentWindow().setTheme(dark ? "dark" : "light");
+  });
   const refresh = async () => (snap = await api.snapshot());
   const empty = $derived(snap !== null && snap.apps.length === 0 && snap.sites.length === 0);
 
@@ -29,7 +37,16 @@
 </script>
 
 {#if snap}
-  <div class="top" data-tauri-drag-region></div>
+  <div class="top" data-tauri-drag-region>
+    <button class="gear" title="Settings" aria-label="Settings" onclick={() => (open = "settings")}>
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+        {#each [0, 45, 90, 135, 180, 225, 270, 315] as turn}
+          <rect x="10" y="1.5" width="4" height="5" rx="1" transform="rotate({turn} 12 12)" />
+        {/each}
+        <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="3" />
+      </svg>
+    </button>
+  </div>
   <header data-tauri-drag-region>
     <div class="tile"><div class="owl"></div></div>
     <div class="title" data-tauri-drag-region>
@@ -42,6 +59,23 @@
     </button>
   </header>
   <div class="hr"></div>
+  {#if !snap.screenPermission}
+    <div class="banner">
+      <span>Nyx needs Screen Recording to mirror your windows</span>
+      <button onclick={() => api.openLink("screen")}>Open Settings</button>
+    </div>
+  {/if}
+  {#if snap.sites.length && !snap.accessibilityPermission}
+    <div class="banner">
+      <span>Nyx needs Accessibility to read the browser's address bar</span>
+      <button onclick={() => api.openLink("accessibility")}>Open Settings</button>
+    </div>
+  {/if}
+  {#if snap.loadFailed}
+    <p class="banner failed">
+      Nyx could not read your saved list — nothing is protected until you add an app again. The file is at {snap.storePath}.
+    </p>
+  {/if}
 
   <main class:disabled={!snap.screenPermission} inert={!snap.screenPermission}>
     {#if empty}
@@ -76,6 +110,7 @@
   {#if open}<div class="backdrop" role="presentation" onclick={close}></div>{/if}
   {#if open === "app"}<AppPicker exclude={snap.apps.map((a) => a.id)} onclose={close} />{/if}
   {#if open === "site"}<SiteEntry onclose={close} />{/if}
+  {#if open === "settings"}<Settings bind:dark />{/if}
 
   <div class="hr"></div>
   <footer>
@@ -116,6 +151,11 @@
   .row { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 16px; font-size: 13px; }
   .row.site { height: 32px; }
   .row:hover { background: var(--row); }
+  .gear { width: 26px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--muted); background: var(--control); border: 1px solid var(--border); }
+  .banner { display: flex; align-items: center; gap: 10px; padding: 12px; font-size: 11px; color: var(--amber-text); background: color-mix(in srgb, var(--amber) 12%, transparent); }
+  .banner span { flex: 1; }
+  .banner button { font-weight: 500; padding: 5px 10px; border-radius: 5px; background: var(--amber); color: var(--ink-on-amber); white-space: nowrap; }
+  .banner.failed { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); line-height: 1.5; }
   .add { margin: 8px 16px 0; }
   .backdrop { position: fixed; inset: 0; z-index: 5; }
   .grow { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

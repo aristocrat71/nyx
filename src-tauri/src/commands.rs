@@ -16,6 +16,7 @@ pub struct Snapshot {
     screen_permission: bool,
     accessibility_permission: bool,
     load_failed: bool,
+    store_path: String,
     hotkey: String,
 }
 
@@ -50,6 +51,7 @@ pub fn snapshot() -> Option<Snapshot> {
         screen_permission: platform::has_screen_permission(),
         accessibility_permission: platform::has_accessibility_permission(),
         load_failed: nyx.list.load_failed,
+        store_path: nyx.list.path().display().to_string(),
         hotkey: nyx.list.hotkey.label(cfg!(target_os = "macos")),
     })
 }

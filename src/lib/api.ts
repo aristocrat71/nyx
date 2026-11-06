@@ -10,6 +10,7 @@ export type Snapshot = {
   screenPermission: boolean;
   accessibilityPermission: boolean;
   loadFailed: boolean;
+  storePath: string;
   hotkey: string;
 };
 

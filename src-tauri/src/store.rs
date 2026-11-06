@@ -158,6 +158,10 @@ impl ProtectionList {
         }
     }
 
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
     pub fn contains(&self, id: &str) -> bool {
         self.apps.iter().any(|a| a.id == id)
     }
