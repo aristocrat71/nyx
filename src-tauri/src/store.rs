@@ -228,16 +228,18 @@ fn write_private(path: &Path, data: &[u8]) -> io::Result<()> {
 }
 
 /// Also run on launch, so files from installs that wrote them world-readable get fixed.
+#[cfg(unix)]
 fn tighten(path: &Path) {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        if let Some(dir) = path.parent() {
-            let _ = fs::set_permissions(dir, fs::Permissions::from_mode(0o700));
-        }
-        let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
+    use std::os::unix::fs::PermissionsExt;
+    if let Some(dir) = path.parent() {
+        let _ = fs::set_permissions(dir, fs::Permissions::from_mode(0o700));
     }
+    let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
 }
+
+/// %APPDATA% is already private to the user by its default ACL.
+#[cfg(not(unix))]
+fn tighten(_path: &Path) {}
 
 #[cfg(test)]
 mod tests {
