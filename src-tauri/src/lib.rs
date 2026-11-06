@@ -1,4 +1,5 @@
 mod site;
+mod store;
 
 use tauri::{Manager, WindowEvent};
 
