@@ -10,6 +10,9 @@ mod platform;
 #[cfg(target_os = "windows")]
 #[path = "platform/windows/mod.rs"]
 mod platform;
+#[cfg(target_os = "linux")]
+#[path = "platform/linux/mod.rs"]
+mod platform;
 
 use engine::State;
 use tauri::{AppHandle, Emitter, Manager, WindowEvent};
@@ -44,6 +47,7 @@ fn show_dashboard(app: &AppHandle) {
     }
 }
 
+#[cfg_attr(target_os = "linux", allow(dead_code))]
 fn permission_lost() {
     log::error!("screen recording permission lost");
 }

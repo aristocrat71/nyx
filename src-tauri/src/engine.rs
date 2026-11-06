@@ -1,3 +1,6 @@
+// Linux has no mirror, so the mirror's events and their backoff never run there.
+#![cfg_attr(target_os = "linux", allow(dead_code))]
+
 use crate::{platform, store::ProtectionList};
 use serde::Serialize;
 use std::cell::RefCell;
