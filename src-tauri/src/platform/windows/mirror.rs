@@ -1,4 +1,4 @@
-use super::overlay::{overlay_window, Target};
+use super::overlay::{overlay_window, place, Target};
 use crate::engine::{self, MirrorEvent};
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -50,12 +50,83 @@ struct Shown {
 }
 
 #[derive(Default)]
-pub struct Mirror;
+pub struct Mirror {
+    epoch: u64,
+    running: bool,
+    pid: Option<i32>,
+    gpu: Option<Gpu>,
+    shown: HashMap<isize, Shown>,
+}
+
+fn post_event(epoch: u64, event: MirrorEvent) {
+    engine::post(move |nyx| {
+        if nyx.mirror.epoch == epoch {
+            nyx.mirror_event(event);
+        }
+    });
+}
 
 impl Mirror {
-    pub fn start(&mut self, _pid: i32) {}
-    pub fn stop(&mut self) {}
-    pub fn restack(&mut self, _targets: &[Target]) {}
+    /// Sessions follow the windows on screen, so they are opened by `restack` each tick.
+    pub fn start(&mut self, pid: i32) {
+        self.stop();
+        self.pid = Some(pid);
+        if self.gpu.is_none() {
+            self.gpu = gpu().inspect_err(|e| log::error!("no gpu for the mirror: {e}")).ok();
+        }
+        if self.gpu.is_none() {
+            post_event(self.epoch, MirrorEvent::Failed);
+        }
+    }
+
+    pub fn stop(&mut self) {
+        self.epoch += 1;
+        self.running = false;
+        self.pid = None;
+        for (_, shown) in self.shown.drain() {
+            let _ = shown.session.Close();
+            let _ = shown.pool.Close();
+            let _ = unsafe { DestroyWindow(shown.hwnd) };
+        }
+    }
+
+    /// Placed after the covers each tick, so every mirror window sits on its own cover.
+    pub fn restack(&mut self, targets: &[Target]) {
+        let Some(gpu) = self.pid.and(self.gpu.as_ref()) else { return };
+        self.shown.retain(|id, shown| {
+            let live = targets.iter().any(|t| t.hwnd == *id);
+            if !live {
+                let _ = shown.session.Close();
+                let _ = unsafe { DestroyWindow(shown.hwnd) };
+            }
+            live
+        });
+        for t in targets {
+            if !self.shown.contains_key(&t.hwnd) {
+                match show(gpu, t, self.epoch) {
+                    Ok(shown) => drop(self.shown.insert(t.hwnd, shown)),
+                    // Some popups cannot be captured; they stay black for the user too, which never leaks.
+                    Err(e) => log::debug!("window not mirrored: {e}"),
+                }
+            }
+            if let Some(shown) = self.shown.get_mut(&t.hwnd).filter(|s| s.placed != Some(t.frame)) {
+                place(shown.hwnd, t.frame, shown.placed.is_none());
+                shown.placed = Some(t.frame);
+            }
+        }
+        if self.shown.is_empty() && !targets.is_empty() {
+            post_event(self.epoch, MirrorEvent::Failed);
+        }
+    }
+
+    /// True on the first frame, when the mirror starts running.
+    fn present(&mut self, id: isize) -> bool {
+        let (Some(gpu), Some(shown)) = (self.gpu.as_ref(), self.shown.get_mut(&id)) else { return false };
+        if copy_frame(gpu, shown).is_err() {
+            return false;
+        }
+        !std::mem::replace(&mut self.running, true)
+    }
 }
 
 fn gpu() -> windows::core::Result<Gpu> {
@@ -73,6 +144,50 @@ fn gpu() -> windows::core::Result<Gpu> {
         context: context.expect("created above"),
         device,
     })
+}
+
+fn show(gpu: &Gpu, t: &Target, epoch: u64) -> windows::core::Result<Shown> {
+    let interop = factory::<GraphicsCaptureItem, IGraphicsCaptureItemInterop>()?;
+    let item: GraphicsCaptureItem = unsafe { interop.CreateForWindow(HWND(t.hwnd as _))? };
+    let size = item.Size()?;
+    let pool = Direct3D11CaptureFramePool::CreateFreeThreaded(&gpu.winrt, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size)?;
+    let session = pool.CreateCaptureSession(&item)?;
+    let _ = session.SetIsBorderRequired(false);
+    let _ = session.SetIsCursorCaptureEnabled(false);
+    let id = t.hwnd;
+    // Frames land on a worker thread; only the id crosses, and the main thread pulls the frame.
+    pool.FrameArrived(&TypedEventHandler::new(move |_, _| {
+        engine::post(move |nyx| {
+            if nyx.mirror.epoch == epoch && nyx.mirror.present(id) {
+                nyx.mirror_event(MirrorEvent::Running);
+            }
+        });
+        Ok(())
+    }))?;
+
+    let hwnd = mirror_window();
+    let desc = DXGI_SWAP_CHAIN_DESC1 {
+        Width: size.Width.max(1) as u32,
+        Height: size.Height.max(1) as u32,
+        Format: DXGI_FORMAT_B8G8R8A8_UNORM,
+        SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
+        BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
+        BufferCount: 2,
+        Scaling: DXGI_SCALING_STRETCH,
+        SwapEffect: DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
+        AlphaMode: DXGI_ALPHA_MODE_IGNORE,
+        ..Default::default()
+    };
+    let swap = unsafe { gpu.factory.CreateSwapChainForComposition(&gpu.device, &desc, None)? };
+    let target = unsafe { gpu.dcomp.CreateTargetForHwnd(hwnd, true)? };
+    let visual = unsafe { gpu.dcomp.CreateVisual()? };
+    unsafe {
+        visual.SetContent(&swap)?;
+        target.SetRoot(&visual)?;
+        gpu.dcomp.Commit()?;
+    }
+    session.StartCapture()?;
+    Ok(Shown { hwnd, pool, session, swap, _target: target, size, placed: None })
 }
 
 fn copy_frame(gpu: &Gpu, shown: &mut Shown) -> windows::core::Result<()> {
