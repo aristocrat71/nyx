@@ -13,6 +13,7 @@ export type Snapshot = {
   storePath: string;
   hotkey: string;
   platform: "macos" | "windows" | "linux";
+  notice: string | null;
 };
 
 export const snapshot = () => invoke<Snapshot | null>("snapshot");

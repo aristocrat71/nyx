@@ -130,6 +130,11 @@ pub fn has_screen_permission() -> bool {
     CGPreflightScreenCaptureAccess()
 }
 
+/// A limit of this platform the dashboard should state plainly; none here.
+pub fn notice() -> Option<&'static str> {
+    None
+}
+
 pub fn request_screen_permission() {
     if !has_screen_permission() {
         log::error!("screen recording permission missing, requesting");

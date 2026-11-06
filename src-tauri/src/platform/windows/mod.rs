@@ -190,6 +190,11 @@ pub fn has_screen_permission() -> bool {
     true
 }
 
+/// A limit of this platform the dashboard should state plainly; none here.
+pub fn notice() -> Option<&'static str> {
+    None
+}
+
 pub fn request_screen_permission() {}
 
 pub fn open_screen_settings() {}

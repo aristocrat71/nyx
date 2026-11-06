@@ -19,6 +19,7 @@ pub struct Snapshot {
     store_path: String,
     hotkey: String,
     platform: &'static str,
+    notice: Option<&'static str>,
 }
 
 #[derive(Serialize)]
@@ -55,6 +56,7 @@ pub fn snapshot() -> Option<Snapshot> {
         store_path: nyx.list.path().display().to_string(),
         hotkey: nyx.list.hotkey.label(cfg!(target_os = "macos")),
         platform: std::env::consts::OS,
+        notice: platform::notice(),
     })
 }
 

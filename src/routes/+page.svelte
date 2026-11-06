@@ -71,6 +71,7 @@
       <button onclick={() => api.openLink("accessibility")}>Open Settings</button>
     </div>
   {/if}
+  {#if snap.notice}<p class="banner">{snap.notice}</p>{/if}
   {#if snap.loadFailed}
     <p class="banner failed">
       Nyx could not read your saved list — nothing is protected until you add an app again. The file is at {snap.storePath}.
