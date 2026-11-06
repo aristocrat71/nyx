@@ -4,6 +4,7 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import * as api from "$lib/api";
   import AppPicker from "$lib/AppPicker.svelte";
+  import SiteEntry from "$lib/SiteEntry.svelte";
 
   let snap = $state<api.Snapshot | null>(null);
   let open = $state<"app" | "site" | "settings" | null>(null);
@@ -49,6 +50,7 @@
         <p class="muted">Nothing protected yet.<br />Add an app, or press {snap.hotkey} while using one.</p>
         <button class="pill" onclick={() => (open = "app")}>+ Add app…</button>
         <p class="muted small">Or cover a site whenever it is your front tab.</p>
+        <button class="pill" onclick={() => (open = "site")}>+ Add website…</button>
       </div>
     {:else}
       <div class="label section">PROTECTED APPS</div>
@@ -67,11 +69,13 @@
           <button class="remove" title="Stop covering {host}" onclick={() => api.removeSite(host)}>Remove</button>
         </div>
       {/each}
+      <button class="pill add" onclick={() => (open = "site")}>+ Add website…</button>
     {/if}
   </main>
 
   {#if open}<div class="backdrop" role="presentation" onclick={close}></div>{/if}
   {#if open === "app"}<AppPicker exclude={snap.apps.map((a) => a.id)} onclose={close} />{/if}
+  {#if open === "site"}<SiteEntry onclose={close} />{/if}
 
   <div class="hr"></div>
   <footer>

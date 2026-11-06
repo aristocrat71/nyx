@@ -95,6 +95,11 @@ pub fn add_site(raw: String) -> Option<String> {
 }
 
 #[tauri::command]
+pub fn normalize_site(raw: String) -> Option<String> {
+    crate::site::ProtectedSite::normalize(&raw)
+}
+
+#[tauri::command]
 pub fn remove_site(host: String) {
     engine::with(|nyx| {
         nyx.list.remove_site(&host);

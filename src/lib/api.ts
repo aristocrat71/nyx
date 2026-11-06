@@ -18,5 +18,6 @@ export const pickable = (exclude: string[]) => invoke<Row[]>("pickable", { exclu
 export const addApp = (path: string) => invoke("add_app", { path });
 export const removeApp = (id: string) => invoke("remove_app", { id });
 export const addSite = (raw: string) => invoke<string | null>("add_site", { raw });
+export const normalizeSite = (raw: string) => invoke<string | null>("normalize_site", { raw });
 export const removeSite = (host: string) => invoke("remove_site", { host });
 export const openLink = (target: "screen" | "accessibility" | "unravel") => invoke("open_link", { target });

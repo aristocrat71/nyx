@@ -65,6 +65,7 @@ pub fn run() {
             commands::add_app,
             commands::remove_app,
             commands::add_site,
+            commands::normalize_site,
             commands::remove_site,
             commands::open_link,
         ])
