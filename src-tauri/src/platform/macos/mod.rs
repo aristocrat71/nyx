@@ -10,11 +10,13 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 
 mod browser;
+mod exclusion;
 mod identity;
 mod mirror;
 mod overlay;
 
 pub use browser::{browser_tab, is_browser, Tab};
+pub use exclusion::{exclude_tray_menu, exclude_window};
 pub use identity::{check_identity, designated_requirement};
 pub use mirror::Mirror;
 pub use overlay::{windows_of, Placeholders};

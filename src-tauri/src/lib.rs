@@ -61,6 +61,9 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let path = app.path().config_dir()?.join("Nyx/protected.json");
+            if let Some(dashboard) = app.get_webview_window("dashboard") {
+                platform::exclude_window(&dashboard);
+            }
             tray::build(app.handle())?;
             let list = store::ProtectionList::load(path);
             let shortcut = list.hotkey.shortcut().or(store::HotkeySpec::STANDARD.shortcut());

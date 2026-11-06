@@ -26,7 +26,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
     let quit = MenuItem::with_id(app, "quit", "Quit Nyx", true, Some("CmdOrCtrl+Q"))?;
     let (sep1, sep2) = (PredefinedMenuItem::separator(app)?, PredefinedMenuItem::separator(app)?);
     let menu = Menu::with_items(app, &[&protect_app, &sep1, &protection, &dashboard, &sep2, &login, &quit])?;
-    TrayIconBuilder::with_id("nyx")
+    let tray = TrayIconBuilder::with_id("nyx")
         .icon(Image::from_bytes(IDLE)?)
         .icon_as_template(true)
         .tooltip("Nyx")
@@ -45,6 +45,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
             _ => {}
         })
         .build(app)?;
+    crate::platform::exclude_tray_menu(&tray);
     app.manage(Items { protect_app, protection, login });
     Ok(())
 }
