@@ -91,7 +91,7 @@
       <div class="label section">PROTECTED APPS</div>
       {#each snap.apps as app (app.id)}
         <div class="row">
-          {#if app.icon}<img class="icon" src={app.icon} alt="" />{:else}<span class="icon blank"></span>{/if}
+          {#if app.path}<img class="icon" src={api.icon(app.path)} alt="" />{:else}<span class="icon blank"></span>{/if}
           <span class="grow">{app.name}</span>
           <button class="remove" title="Stop protecting {app.name}" onclick={() => api.removeApp(app.id)}>Remove</button>
         </div>

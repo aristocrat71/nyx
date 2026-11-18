@@ -23,7 +23,7 @@
     {#if apps === null}<p class="muted note">Looking for apps…</p>{/if}
     {#each shown as app (app.id)}
       <button class="item" onclick={() => pick(app)}>
-        {#if app.icon}<img src={app.icon} alt="" />{:else}<span class="blank"></span>{/if}
+        <img src={api.icon(app.path)} alt="" loading="lazy" onerror={(e) => ((e.currentTarget as HTMLElement).style.visibility = "hidden")} />
         <span>{app.name}</span>
       </button>
     {/each}
@@ -38,7 +38,6 @@
   .note { padding: 10px; font-size: 11px; }
   .item { display: flex; align-items: center; gap: 8px; width: 100%; height: 30px; padding: 0 10px; text-align: left; }
   .item:hover { background: var(--row); }
-  img, .blank { width: 18px; height: 18px; flex: none; }
-  .blank { border-radius: 4px; background: var(--control); }
+  img { width: 18px; height: 18px; flex: none; }
   span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

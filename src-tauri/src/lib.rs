@@ -66,6 +66,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(hotkey.build())
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
+        .register_asynchronous_uri_scheme_protocol("icon", |_, request, responder| commands::icon(request, responder))
         .invoke_handler(tauri::generate_handler![
             commands::snapshot,
             commands::pickable,

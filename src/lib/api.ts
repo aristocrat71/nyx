@@ -1,7 +1,7 @@
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 
 export type State = "idle" | "active" | "blind";
-export type Row = { id: string; name: string; path: string; icon: string | null };
+export type Row = { id: string; name: string; path: string };
 export type Snapshot = {
   apps: Row[];
   sites: string[];
@@ -16,6 +16,7 @@ export type Snapshot = {
   notice: string | null;
 };
 
+export const icon = (path: string) => (path ? convertFileSrc(path, "icon") : null);
 export const snapshot = () => invoke<Snapshot | null>("snapshot");
 export const pickable = (exclude: string[]) => invoke<Row[]>("pickable", { exclude });
 export const addApp = (path: string) => invoke("add_app", { path });

@@ -76,16 +76,16 @@ pub fn app_at(path: &Path) -> Option<Installed> {
     Some(Installed { id, name, path: path.into() })
 }
 
-/// LaunchServices hands back whichever bundle claims the id, so an icon only comes
-/// from one that satisfies the identity pinned when the app was added.
-pub fn protected_icon(app: &ProtectedApp) -> Option<Vec<u8>> {
+/// LaunchServices hands back whichever bundle claims the id, so only one that satisfies
+/// the identity pinned when the app was added counts.
+pub fn protected_path(app: &ProtectedApp) -> Option<PathBuf> {
     let url = NSWorkspace::sharedWorkspace().URLForApplicationWithBundleIdentifier(&NSString::from_str(&app.id))?;
     let path = url.to_file_path()?;
     if app.requirement.as_deref().is_some_and(|r| !bundle_satisfies(&path, r)) {
         log::error!("bundle claiming a protected id does not match its pinned identity");
         return None;
     }
-    icon_png(&path)
+    Some(path)
 }
 
 pub fn icon_png(path: &Path) -> Option<Vec<u8>> {

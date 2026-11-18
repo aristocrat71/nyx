@@ -2005,7 +2005,6 @@ dependencies = [
 name = "nyx"
 version = "0.2.0"
 dependencies = [
- "base64 0.21.7",
  "block2",
  "dispatch2",
  "log",
@@ -2021,6 +2020,7 @@ dependencies = [
  "objc2-quartz-core",
  "objc2-screen-capture-kit",
  "objc2-security",
+ "percent-encoding",
  "png",
  "serde",
  "serde_json",

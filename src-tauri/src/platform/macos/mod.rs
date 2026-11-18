@@ -16,7 +16,7 @@ mod identity;
 mod mirror;
 mod overlay;
 
-pub use apps::{app_at, icon_png, pickable, protected_icon};
+pub use apps::{app_at, icon_png, pickable, protected_path};
 pub use browser::{browser_tab, has_accessibility_permission, is_browser, open_accessibility_settings, Tab};
 pub use exclusion::{exclude_tray_menu, exclude_window};
 pub use identity::{check_identity, designated_requirement};

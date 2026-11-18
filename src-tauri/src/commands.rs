@@ -1,10 +1,9 @@
 use crate::engine::{self, State};
 use crate::platform;
-use base64::Engine as _;
 use serde::Serialize;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -27,25 +26,32 @@ pub struct Row {
     id: String,
     name: String,
     path: String,
-    icon: Option<String>,
 }
 
 thread_local! {
-    static ICONS: RefCell<HashMap<String, Option<String>>> = RefCell::default();
+    static PATHS: RefCell<HashMap<String, Option<PathBuf>>> = RefCell::default();
 }
 
-fn data_url(png: Vec<u8>) -> String {
-    format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(png))
+/// Icons load lazily from here as rows scroll into view, never all at once in a command reply.
+pub fn icon(request: tauri::http::Request<Vec<u8>>, responder: tauri::UriSchemeResponder) {
+    let path = percent_encoding::percent_decode_str(request.uri().path().trim_start_matches('/')).decode_utf8_lossy().into_owned();
+    tauri::async_runtime::spawn_blocking(move || {
+        let response = match platform::icon_png(Path::new(&path)) {
+            Some(png) => tauri::http::Response::builder().header("Content-Type", "image/png").body(png),
+            None => tauri::http::Response::builder().status(404).body(Vec::new()),
+        };
+        responder.respond(response.expect("static response parts"));
+    });
 }
 
 #[tauri::command]
 pub fn snapshot() -> Option<Snapshot> {
     engine::with(|nyx| Snapshot {
         apps: nyx.list.apps.iter().map(|app| Row {
-            icon: ICONS.with(|c| c.borrow_mut().entry(app.id.clone()).or_insert_with(|| platform::protected_icon(app).map(data_url)).clone()),
+            path: PATHS.with(|c| c.borrow_mut().entry(app.id.clone()).or_insert_with(|| platform::protected_path(app)).clone())
+                .map_or_else(String::new, |p| p.to_string_lossy().into_owned()),
             id: app.id.clone(),
             name: app.name.clone(),
-            path: String::new(),
         }).collect(),
         sites: nyx.list.sites.iter().map(|s| s.host.clone()).collect(),
         enabled: nyx.list.enabled,
@@ -64,7 +70,6 @@ pub fn snapshot() -> Option<Snapshot> {
 #[tauri::command]
 pub async fn pickable(exclude: Vec<String>) -> Vec<Row> {
     platform::pickable().into_iter().filter(|a| !exclude.contains(&a.id)).map(|a| Row {
-        icon: platform::icon_png(&a.path).map(data_url),
         path: a.path.to_string_lossy().into_owned(),
         id: a.id,
         name: a.name,

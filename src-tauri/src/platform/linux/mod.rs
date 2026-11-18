@@ -220,6 +220,6 @@ pub fn icon_png(_path: &Path) -> Option<Vec<u8>> {
     None
 }
 
-pub fn protected_icon(_app: &ProtectedApp) -> Option<Vec<u8>> {
+pub fn protected_path(_app: &ProtectedApp) -> Option<PathBuf> {
     None
 }

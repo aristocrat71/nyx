@@ -62,10 +62,10 @@ pub fn app_at(path: &Path) -> Option<Installed> {
     })
 }
 
-/// The pinned path is where the icon comes from, never whichever exe happens to share the name.
-pub fn protected_icon(app: &ProtectedApp) -> Option<Vec<u8>> {
+/// The pinned path, never whichever exe happens to share the name.
+pub fn protected_path(app: &ProtectedApp) -> Option<PathBuf> {
     let path = PathBuf::from(app.requirement.as_deref()?.strip_prefix("path:")?);
-    (path.is_file() && satisfies(&path, app.requirement.as_deref()?)).then(|| icon_png(&path)).flatten()
+    (path.is_file() && satisfies(&path, app.requirement.as_deref()?)).then_some(path)
 }
 
 pub fn icon_png(path: &Path) -> Option<Vec<u8>> {
