@@ -26,7 +26,7 @@
     // Grants arrive from System Settings, which sends no event, so they are polled while shown.
     const timer = setInterval(() => !document.hidden && refresh(), 2000);
     // Esc abandons an open panel first, and only then closes the dashboard.
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && (open ? close() : getCurrentWindow().hide());
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && (open ? close() : getCurrentWindow().close());
     window.addEventListener("keydown", onKey);
     return () => {
       unlisten.then((stop) => stop());

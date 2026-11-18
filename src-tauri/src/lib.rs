@@ -15,7 +15,7 @@ mod platform;
 mod platform;
 
 use engine::State;
-use tauri::{AppHandle, Emitter, Manager, WindowEvent};
+use tauri::{AppHandle, Emitter, Manager, RunEvent, WebviewWindowBuilder};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 struct StderrLog;
@@ -44,7 +44,20 @@ fn show_dashboard(app: &AppHandle) {
     if let Some(dashboard) = app.get_webview_window("dashboard") {
         let _ = dashboard.show();
         let _ = dashboard.set_focus();
+        return;
     }
+    // Built on open and destroyed on close, so the webview costs nothing while Nyx sits in the tray.
+    // Off the main thread, since building from a menu handler deadlocks on Windows.
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let built = WebviewWindowBuilder::from_config(&app, &app.config().app.windows[0]).and_then(|b| b.build());
+        let Ok(window) = built.inspect_err(|e| log::error!("dashboard: {e}")) else { return };
+        let _ = app.run_on_main_thread(move || {
+            platform::exclude_window(&window);
+            let _ = window.show();
+            let _ = window.set_focus();
+        });
+    });
 }
 
 #[cfg_attr(target_os = "linux", allow(dead_code))]
@@ -82,9 +95,6 @@ pub fn run() {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             platform::request_screen_permission();
             let path = app.path().config_dir()?.join("Nyx/protected.json");
-            if let Some(dashboard) = app.get_webview_window("dashboard") {
-                platform::exclude_window(&dashboard);
-            }
             tray::build(app.handle())?;
             let list = store::ProtectionList::load(path);
             let shortcut = list.hotkey.shortcut().or(store::HotkeySpec::STANDARD.shortcut());
@@ -99,12 +109,12 @@ pub fn run() {
             }
             Ok(())
         })
-        .on_window_event(|window, event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                let _ = window.hide();
+        .build(tauri::generate_context!())
+        .expect("error while building Nyx")
+        .run(|_, event| {
+            // Closing the dashboard must not quit Nyx; only Quit, which passes an exit code, does.
+            if let RunEvent::ExitRequested { code: None, api, .. } = event {
+                api.prevent_exit();
             }
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running Nyx");
+        });
 }
