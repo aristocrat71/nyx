@@ -9,7 +9,7 @@
 </script>
 
 <div class="perms" data-tauri-drag-region>
-  <div class="owl"></div>
+  <div class="tile"><div class="owl"></div></div>
   <h1>Two permissions, then you're set.</h1>
   <div class="list">
     {#each rows as row (row.key)}
@@ -28,7 +28,7 @@
   </div>
   {#if snap.platform === "macos"}
     <p class="muted small info">
-      Nyx not in the list? Click <kbd>+</kbd> below it and choose Nyx.<br />
+      Not seeing Nyx in the list? Add it manually by clicking <kbd>+</kbd> at the end of the app list.<br />
       macOS may ask to reopen Nyx after Screen Recording.
     </p>
   {/if}
@@ -36,14 +36,15 @@
 
 <style>
   .perms { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 30px 20px; }
-  .owl { width: 40px; height: 48px; color: var(--muted); opacity: 0.5; }
+  .tile { width: 64px; height: 64px; border-radius: 15px; background: #000; display: grid; place-items: center; border: 1px solid var(--border); }
+  .owl { width: 36px; height: 42px; color: #fff; }
   h1 { font-size: 14px; font-weight: 500; }
   .list { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
   .row { display: flex; align-items: center; gap: 12px; padding: 14px; }
   .row + .row { border-top: 1px solid var(--hairline); }
   .text { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
   .small { font-size: 11px; }
-  .ok { font-size: 11px; font-weight: 500; color: var(--amber-text); }
+  .ok { font-size: 11px; font-weight: 500; color: var(--ok); }
   .info { text-align: center; line-height: 1.7; }
   kbd { font: inherit; padding: 0 5px; border-radius: 4px; border: 1px solid var(--border); background: var(--control); }
 </style>

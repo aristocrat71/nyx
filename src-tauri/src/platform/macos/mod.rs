@@ -3,7 +3,7 @@ use objc2_app_kit::{
     NSApplicationDidChangeScreenParametersNotification, NSRunningApplication, NSWorkspace,
     NSWorkspaceDidActivateApplicationNotification, NSWorkspaceDidTerminateApplicationNotification,
 };
-use objc2_core_graphics::{CGPreflightScreenCaptureAccess, CGRequestScreenCaptureAccess};
+use objc2_core_graphics::CGPreflightScreenCaptureAccess;
 use objc2_foundation::{NSNotificationCenter, NSOperationQueue, NSString, NSURL, NSUserDefaults};
 use std::ffi::{c_char, c_void, CStr};
 use std::path::PathBuf;
@@ -135,9 +135,7 @@ pub fn notice() -> Option<&'static str> {
     None
 }
 
-/// Only ever from the Open Settings button: the request lists Nyx in the pane, which then opens.
 pub fn open_screen_settings() {
-    CGRequestScreenCaptureAccess();
     open_url("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture");
 }
 
