@@ -3,7 +3,7 @@ use objc2_app_kit::{
     NSApplicationDidChangeScreenParametersNotification, NSRunningApplication, NSWorkspace,
     NSWorkspaceDidActivateApplicationNotification, NSWorkspaceDidTerminateApplicationNotification,
 };
-use objc2_core_graphics::CGPreflightScreenCaptureAccess;
+use objc2_core_graphics::{CGPreflightScreenCaptureAccess, CGRequestScreenCaptureAccess};
 use objc2_foundation::{NSNotificationCenter, NSOperationQueue, NSString, NSURL, NSUserDefaults};
 use std::ffi::{c_char, c_void, CStr};
 use std::path::PathBuf;
@@ -136,6 +136,8 @@ pub fn notice() -> Option<&'static str> {
 }
 
 pub fn open_screen_settings() {
+    // The only way macOS lists Nyx under Screen Recording; it costs one system prompt.
+    CGRequestScreenCaptureAccess();
     open_url("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture");
 }
 
