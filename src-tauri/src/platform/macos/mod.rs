@@ -135,14 +135,9 @@ pub fn notice() -> Option<&'static str> {
     None
 }
 
-pub fn request_screen_permission() {
-    if !has_screen_permission() {
-        log::error!("screen recording permission missing, requesting");
-        CGRequestScreenCaptureAccess();
-    }
-}
-
+/// Only ever from the Open Settings button: the request lists Nyx in the pane, which then opens.
 pub fn open_screen_settings() {
+    CGRequestScreenCaptureAccess();
     open_url("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture");
 }
 
