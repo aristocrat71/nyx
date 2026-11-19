@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import * as api from "./api";
 
   let { hotkey, ondone }: { hotkey: string; ondone: () => void } = $props();
   const last = 2;
@@ -32,25 +31,30 @@
     {#key page}
       <div class="page">
         {#if page === 0}
-          <div class="screen">
-            {@render win(false, "back")}
-            {@render win(true, "front")}
-          </div>
-          <h1>Share your screen.<br />Not everything on it.</h1>
+          <div class="greeting"><span class="muted">Greetings from Team</span><img src="/unravel.png" alt="Unravel" /></div>
+          <div class="tile"><div class="owl"></div></div>
+          <h1>Welcome to Nyx</h1>
         {:else if page === 1}
+          <div class="card">
+            <div class="item"><i></i><span style="width: 60px"></span></div>
+            <div class="item"><i></i><span style="width: 84px"></span></div>
+            <div class="pill">+ Add app…</div>
+            <div class="item site"><span style="width: 96px"></span></div>
+            <div class="pill">+ Add website…</div>
+          </div>
+          <div class="keys">
+            <span class="muted">or press</span>
+            {#each hotkey.includes("+") ? hotkey.split("+") : [...hotkey] as key}<kbd>{key}</kbd>{/each}
+            <span class="muted">in any app</span>
+          </div>
+          <h1>Add the apps and sites<br />you want hidden.</h1>
+        {:else}
+          <div class="sharing"><i></i>Sharing</div>
           <div class="pair">
             <figure>{@render win(false)}<figcaption>You</figcaption></figure>
             <figure>{@render win(true)}<figcaption>Viewers</figcaption></figure>
           </div>
-          <h1>You keep working.<br />They see a cover.</h1>
-        {:else}
-          <div class="keys">
-            {#each hotkey.includes("+") ? hotkey.split("+") : [...hotkey] as key}
-              <kbd>{key}</kbd>
-            {/each}
-          </div>
-          {@render win(true, "toggle")}
-          <h1>Press it in any app<br />to protect it.</h1>
+          <h1>Only while you share.<br />You see it, they don't.</h1>
         {/if}
       </div>
     {/key}
@@ -67,10 +71,6 @@
       <button class="arrow" aria-label="Next" onclick={() => go(page + 1)}>→</button>
     {/if}
   </nav>
-
-  <button class="credit" onclick={() => api.openLink("unravel")}>
-    <span class="muted">Made by Team</span><img src="/unravel.png" alt="Unravel" />
-  </button>
 </div>
 
 <style>
@@ -89,20 +89,29 @@
   .cover .owl { width: 22px; height: 26px; color: #fff; opacity: 0.5; }
   .covered .cover { opacity: 1; }
 
-  .screen { position: relative; width: 250px; height: 150px; border-radius: 10px; border: 1px solid var(--border); background: var(--control); }
-  .screen .win { position: absolute; }
-  .back { left: 16px; top: 16px; }
-  .front { right: 16px; bottom: 16px; box-shadow: 0 0 0 2px var(--amber); }
+  .greeting { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+  .greeting img { height: 12px; }
+  .tile { width: 96px; height: 96px; border-radius: 22px; background: #000; display: grid; place-items: center; border: 1px solid var(--border); }
+  .tile .owl { width: 56px; height: 66px; color: #fff; }
+
+  .card { width: 220px; padding: 12px; display: flex; flex-direction: column; gap: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); }
+  .item { display: flex; align-items: center; gap: 8px; height: 16px; }
+  .item i { width: 14px; height: 14px; border-radius: 4px; background: var(--control); }
+  .item span { height: 6px; border-radius: 3px; background: var(--control); }
+  .item.site { margin-top: 6px; }
+  .card .pill { align-self: flex-start; font-size: 10px; }
+
+  .sharing { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 12px; background: var(--control); border: 1px solid var(--border); }
+  .sharing i { width: 7px; height: 7px; border-radius: 50%; background: #e5534b; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 50% { opacity: 0.3; } }
 
   .pair { display: flex; gap: 14px; }
   .pair .win { width: 130px; }
   figure { display: flex; flex-direction: column; align-items: center; gap: 8px; }
   figcaption { font-size: 11px; color: var(--muted); }
 
-  .keys { display: flex; gap: 6px; }
-  kbd { font: inherit; font-size: 14px; font-weight: 500; min-width: 32px; padding: 6px 8px; text-align: center; border-radius: 6px; background: var(--control); border: 1px solid var(--border); border-bottom-width: 3px; }
-  .toggle .cover { animation: toggle 3s infinite; }
-  @keyframes toggle { 0%, 40% { opacity: 0; } 50%, 90% { opacity: 1; } 100% { opacity: 0; } }
+  .keys { display: flex; align-items: center; gap: 5px; font-size: 11px; }
+  kbd { font: inherit; font-size: 12px; font-weight: 500; min-width: 24px; padding: 3px 6px; text-align: center; border-radius: 5px; background: var(--control); border: 1px solid var(--border); border-bottom-width: 2px; }
 
   nav { width: 100%; display: flex; align-items: center; justify-content: space-between; height: 32px; }
   .arrow { width: 32px; height: 28px; font-size: 14px; border-radius: 6px; background: var(--control); border: 1px solid var(--border); }
@@ -111,6 +120,4 @@
   .dots button { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
   .dots .on { background: var(--text); }
   .ready { height: 28px; background: var(--amber); color: var(--ink-on-amber); border-color: transparent; }
-  .credit { margin-top: 16px; display: flex; align-items: center; gap: 6px; font-size: 10px; }
-  .credit img { height: 9px; }
 </style>
