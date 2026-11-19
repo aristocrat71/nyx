@@ -7,6 +7,7 @@
   import SiteEntry from "$lib/SiteEntry.svelte";
   import Settings from "$lib/Settings.svelte";
   import Intro from "$lib/Intro.svelte";
+  import Permissions from "$lib/Permissions.svelte";
 
   let snap = $state<api.Snapshot | null>(null);
   let open = $state<"app" | "site" | "settings" | null>(null);
@@ -44,6 +45,8 @@
 
 {#if snap && !introDone}
   <Intro hotkey={snap.hotkey} ondone={finishIntro} />
+{:else if snap && !(snap.screenPermission && snap.accessibilityPermission)}
+  <Permissions {snap} />
 {:else if snap}
   <div class="top" data-tauri-drag-region>
     <button class="gear" title="Settings" aria-label="Settings" onclick={() => (open = "settings")}>
@@ -67,18 +70,6 @@
     </button>
   </header>
   <div class="hr"></div>
-  {#if !snap.screenPermission}
-    <div class="banner">
-      <span>Nyx needs Screen Recording to mirror your windows</span>
-      <button onclick={() => api.openLink("screen")}>Open Settings</button>
-    </div>
-  {/if}
-  {#if snap.sites.length && !snap.accessibilityPermission}
-    <div class="banner">
-      <span>Nyx needs Accessibility to read the browser's address bar</span>
-      <button onclick={() => api.openLink("accessibility")}>Open Settings</button>
-    </div>
-  {/if}
   {#if snap.notice}<p class="banner">{snap.notice}</p>{/if}
   {#if snap.loadFailed}
     <p class="banner failed">
@@ -86,7 +77,7 @@
     </p>
   {/if}
 
-  <main class:disabled={!snap.screenPermission} inert={!snap.screenPermission}>
+  <main>
     {#if empty}
       <div class="empty">
         <div class="owl big"></div>
@@ -154,7 +145,6 @@
   .credit img { width: 100%; }
   .hr { height: 1px; background: var(--hairline); flex: none; }
   main { flex: 1; overflow-y: auto; position: relative; }
-  main.disabled { opacity: 0.4; }
   .section { padding-top: 16px; }
   .section ~ .section { padding-top: 22px; }
   .row { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 16px; font-size: 13px; }
@@ -162,8 +152,6 @@
   .row:hover { background: var(--row); }
   .gear { width: 26px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--muted); background: var(--control); border: 1px solid var(--border); }
   .banner { display: flex; align-items: center; gap: 10px; padding: 12px; font-size: 11px; color: var(--amber-text); background: color-mix(in srgb, var(--amber) 12%, transparent); }
-  .banner span { flex: 1; }
-  .banner button { font-weight: 500; padding: 5px 10px; border-radius: 5px; background: var(--amber); color: var(--ink-on-amber); white-space: nowrap; }
   .banner.failed { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); line-height: 1.5; }
   .add { margin: 8px 16px 0; }
   .backdrop { position: fixed; inset: 0; z-index: 5; }
