@@ -54,7 +54,7 @@
             <figure>{@render win(false)}<figcaption>You</figcaption></figure>
             <figure>{@render win(true)}<figcaption>Viewers</figcaption></figure>
           </div>
-          <h1>Only while you share.<br />You see it, they don't.</h1>
+          <h1>Nyx wakes up only when you start sharing your screen.</h1>
         {/if}
       </div>
     {/key}
@@ -78,7 +78,7 @@
   .stage { flex: 1; width: 100%; display: grid; place-items: center; }
   .page { display: flex; flex-direction: column; align-items: center; gap: 28px; animation: in 0.3s ease-out; }
   @keyframes in { from { opacity: 0; transform: translateX(12px); } }
-  h1 { font-size: 15px; font-weight: 500; text-align: center; line-height: 1.6; }
+  h1 { font-size: 15px; font-weight: 500; text-align: center; line-height: 1.6; text-wrap: balance; }
 
   .win { width: 150px; border-radius: 7px; border: 1px solid var(--border); background: var(--panel); overflow: hidden; }
   .bar { display: flex; gap: 4px; padding: 6px 7px; border-bottom: 1px solid var(--hairline); }
@@ -89,8 +89,8 @@
   .cover .owl { width: 22px; height: 26px; color: #fff; opacity: 0.5; }
   .covered .cover { opacity: 1; }
 
-  .greeting { display: flex; align-items: center; gap: 7px; font-size: 12px; }
-  .greeting img { height: 12px; }
+  .greeting { display: flex; align-items: baseline; gap: 0.5em; font-size: 15px; }
+  .greeting img { height: 1.05em; position: relative; top: 0.08em; }
   .tile { width: 96px; height: 96px; border-radius: 22px; background: #000; display: grid; place-items: center; border: 1px solid var(--border); }
   .tile .owl { width: 56px; height: 66px; color: #fff; }
 
