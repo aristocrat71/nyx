@@ -11,13 +11,15 @@ use objc2_core_foundation::CFRetained;
 use objc2_core_media::{CMSampleBuffer, CMTime};
 use objc2_core_video::{kCVPixelFormatType_32BGRA, CVPixelBuffer, CVPixelBufferGetIOSurface};
 use objc2_foundation::{NSArray, NSDictionary, NSError, NSNumber, NSRect, NSString};
-use objc2_quartz_core::{kCAGravityResize, CATransaction};
+use objc2_quartz_core::{kCAGravityResize, CALayer, CATransaction};
 use objc2_screen_capture_kit::{
     SCContentFilter, SCDisplay, SCFrameStatus, SCShareableContent, SCStream, SCStreamConfiguration,
     SCStreamDelegate, SCStreamErrorCode, SCStreamErrorDomain, SCStreamFrameInfoStatus, SCStreamOutput,
     SCStreamOutputType,
 };
 use std::collections::HashMap;
+use std::cell::RefCell;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 // Mirror: what the user sees through the placeholders. One capture-excluded window per
 // display, fed by a ScreenCaptureKit stream of every window the app owns, menus included.
@@ -35,12 +37,9 @@ impl<T> Handoff<T> {
 #[derive(Default)]
 pub struct Mirror {
     epoch: u64,
-    running: bool,
     level: isize,
     streams: Vec<(Retained<SCStream>, Retained<StreamOutput>)>,
     windows: HashMap<u32, Retained<NSWindow>>,
-    /// The parent buffer, not just its surface: SCK's pool rewrites the surface underneath otherwise.
-    held: HashMap<u32, CFRetained<CVPixelBuffer>>,
 }
 
 fn post_event(epoch: u64, event: MirrorEvent) {
@@ -79,11 +78,9 @@ impl Mirror {
 
     pub fn stop(&mut self) {
         self.epoch += 1;
-        self.running = false;
         for (stream, _) in self.streams.drain(..) {
             unsafe { stream.stopCaptureWithCompletionHandler(None) };
         }
-        self.held.clear();
         for window in self.windows.drain().map(|(_, w)| w) {
             window.orderOut(None);
         }
@@ -114,11 +111,12 @@ impl Mirror {
                 )
             };
             unsafe { filter.setIncludeMenuBar(false) };
-            let output = StreamOutput::new(self.epoch, id);
+            let (window, layer) = mirror_window(mtm, self.level, appkit_rect(unsafe { display.frame() }, height));
+            let output = StreamOutput::new(self.epoch, layer);
             let delegate = ProtocolObject::from_ref(&*output);
             let stream = unsafe {
                 SCStream::initWithFilter_configuration_delegate(
-                    SCStream::alloc(), &filter, &configuration(mtm, &display), Some(delegate),
+                    SCStream::alloc(), &filter, &configuration(mtm, id, &display), Some(delegate),
                 )
             };
             let added = unsafe {
@@ -130,7 +128,6 @@ impl Mirror {
                 log::error!("addStreamOutput failed: {}", e.localizedDescription());
                 continue;
             }
-            let window = mirror_window(mtm, self.level, appkit_rect(unsafe { display.frame() }, height));
             self.windows.insert(id, window);
             let epoch = self.epoch;
             let started = RcBlock::new(move |error: *mut NSError| {
@@ -144,36 +141,21 @@ impl Mirror {
         }
         !self.streams.is_empty()
     }
-
-    /// True on the first frame, when the mirror starts running.
-    fn present(&mut self, display: u32, buffer: CFRetained<CVPixelBuffer>) -> bool {
-        let Some(layer) = self.windows.get(&display).and_then(|w| w.contentView()).and_then(|v| v.layer()) else {
-            return false;
-        };
-        let Some(surface) = CVPixelBufferGetIOSurface(Some(&buffer)) else { return false };
-        CATransaction::begin();
-        CATransaction::setDisableActions(true);
-        unsafe { layer.setContents(Some(&*(CFRetained::as_ptr(&surface).as_ptr() as *const AnyObject))) };
-        CATransaction::commit();
-        self.held.insert(display, buffer);
-        !std::mem::replace(&mut self.running, true)
-    }
 }
 
-fn configuration(mtm: MainThreadMarker, display: &SCDisplay) -> Retained<SCStreamConfiguration> {
-    let id = unsafe { display.displayID() };
-    let scale = NSScreen::screens(mtm)
-        .iter()
-        .find(|s| {
-            let number = s.deviceDescription().objectForKey(&NSString::from_str("NSScreenNumber"));
-            number.and_then(|n| n.downcast::<NSNumber>().ok()).is_some_and(|n| n.unsignedIntValue() == id)
-        })
-        .map_or(2.0, |s| s.backingScaleFactor());
+fn configuration(mtm: MainThreadMarker, id: u32, display: &SCDisplay) -> Retained<SCStreamConfiguration> {
+    let screen = NSScreen::screens(mtm).iter().find(|s| {
+        let number = s.deviceDescription().objectForKey(&NSString::from_str("NSScreenNumber"));
+        number.and_then(|n| n.downcast::<NSNumber>().ok()).is_some_and(|n| n.unsignedIntValue() == id)
+    });
+    let scale = screen.as_ref().map_or(2.0, |s| s.backingScaleFactor());
+    // At the display's own rate, so a 120 Hz screen is not mirrored at half speed.
+    let fps = screen.as_ref().map_or(60, |s| s.maximumFramesPerSecond()).max(60);
     let config = unsafe { SCStreamConfiguration::new() };
     unsafe {
         config.setWidth(((display.width() as f64) * scale).max(1.0) as usize);
         config.setHeight(((display.height() as f64) * scale).max(1.0) as usize);
-        config.setMinimumFrameInterval(CMTime::new(1, 60));
+        config.setMinimumFrameInterval(CMTime::new(1, fps as i32));
         config.setPixelFormat(kCVPixelFormatType_32BGRA);
         config.setShowsCursor(false);
         config.setQueueDepth(3);
@@ -182,23 +164,27 @@ fn configuration(mtm: MainThreadMarker, display: &SCDisplay) -> Retained<SCStrea
 }
 
 /// Excluded from capture before it is ever ordered on screen, so no mirrored frame reaches a viewer.
-fn mirror_window(mtm: MainThreadMarker, level: isize, frame: NSRect) -> Retained<NSWindow> {
+/// The view hosts its own layer, so frames can be set on it from the capture queue.
+fn mirror_window(mtm: MainThreadMarker, level: isize, frame: NSRect) -> (Retained<NSWindow>, Retained<CALayer>) {
     let window = overlay_window(mtm, level);
     window.setSharingType(NSWindowSharingType::None);
+    let layer = CALayer::new();
+    layer.setContentsGravity(unsafe { kCAGravityResize });
     let view = NSView::new(mtm);
+    view.setLayer(Some(&layer));
     view.setWantsLayer(true);
-    if let Some(layer) = view.layer() {
-        layer.setContentsGravity(unsafe { kCAGravityResize });
-    }
     window.setContentView(Some(&view));
     window.setFrame_display(frame, false);
     window.orderFrontRegardless();
-    window
+    (window, layer)
 }
 
 struct StreamIvars {
     epoch: u64,
-    display: u32,
+    layer: Retained<CALayer>,
+    /// The parent buffer, not just its surface: SCK's pool rewrites the surface underneath otherwise.
+    held: RefCell<Option<CFRetained<CVPixelBuffer>>>,
+    running: AtomicBool,
 }
 
 define_class!(
@@ -216,12 +202,16 @@ define_class!(
                 return;
             }
             let Some(buffer) = (unsafe { sample.image_buffer() }) else { return };
-            let (epoch, display, buffer) = (self.ivars().epoch, self.ivars().display, Handoff(buffer));
-            engine::post(move |nyx| {
-                if nyx.mirror.epoch == epoch && nyx.mirror.present(display, buffer.take()) {
-                    nyx.mirror_event(MirrorEvent::Running);
-                }
-            });
+            // Shown right here on the capture queue: a hop to the main thread waits behind the resnap.
+            let Some(surface) = CVPixelBufferGetIOSurface(Some(&buffer)) else { return };
+            CATransaction::begin();
+            CATransaction::setDisableActions(true);
+            unsafe { self.ivars().layer.setContents(Some(&*(CFRetained::as_ptr(&surface).as_ptr() as *const AnyObject))) };
+            CATransaction::commit();
+            self.ivars().held.replace(Some(buffer));
+            if !self.ivars().running.swap(true, Ordering::Relaxed) {
+                post_event(self.ivars().epoch, MirrorEvent::Running);
+            }
         }
     }
 
@@ -236,8 +226,8 @@ define_class!(
 );
 
 impl StreamOutput {
-    fn new(epoch: u64, display: u32) -> Retained<Self> {
-        let this = Self::alloc().set_ivars(StreamIvars { epoch, display });
+    fn new(epoch: u64, layer: Retained<CALayer>) -> Retained<Self> {
+        let this = Self::alloc().set_ivars(StreamIvars { epoch, layer, held: RefCell::default(), running: AtomicBool::new(false) });
         unsafe { msg_send![super(this), init] }
     }
 }
