@@ -6,6 +6,7 @@
   import AppPicker from "$lib/AppPicker.svelte";
   import SiteEntry from "$lib/SiteEntry.svelte";
   import Settings from "$lib/Settings.svelte";
+  import Intro from "$lib/Intro.svelte";
 
   let snap = $state<api.Snapshot | null>(null);
   let open = $state<"app" | "site" | "settings" | null>(null);
@@ -17,6 +18,11 @@
     document.documentElement.classList.toggle("dark", dark);
     getCurrentWindow().setTheme(dark ? "dark" : "light");
   });
+  let introDone = $state(localStorage.getItem("nyx.intro") === "done");
+  const finishIntro = () => {
+    localStorage.setItem("nyx.intro", "done");
+    introDone = true;
+  };
   const refresh = async () => (snap = await api.snapshot());
   const empty = $derived(snap !== null && snap.apps.length === 0 && snap.sites.length === 0);
 
@@ -36,7 +42,9 @@
   });
 </script>
 
-{#if snap}
+{#if snap && !introDone}
+  <Intro hotkey={snap.hotkey} ondone={finishIntro} />
+{:else if snap}
   <div class="top" data-tauri-drag-region>
     <button class="gear" title="Settings" aria-label="Settings" onclick={() => (open = "settings")}>
       <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
