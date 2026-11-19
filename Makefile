@@ -13,7 +13,7 @@ check:
 	bun run check
 	cd src-tauri && cargo check --all-targets
 
-# macOS: signed Nyx.app with the "Nyx Dev" cert, so permissions survive rebuilds.
+# macOS: signed Nyx.app with the "Nyx Dev" cert, installed to /Applications.
 app:
 	./scripts/mac-app.sh
 

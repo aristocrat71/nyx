@@ -5,7 +5,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 args=(--bundles app)
-[ -n "${NYX_UNIVERSAL:-}" ] && args+=(--target universal-apple-darwin)
+out=src-tauri/target/release/bundle/macos
+if [ -n "${NYX_UNIVERSAL:-}" ]; then
+  args+=(--target universal-apple-darwin)
+  out=src-tauri/target/universal-apple-darwin/release/bundle/macos
+fi
 
 # The dev identity is deliberately untrusted, so it is addressed by hash; the exact-line
 # match keeps an unrelated "…Nyx Dev…" identity from being picked.
@@ -16,3 +20,7 @@ if [ -z "${APPLE_SIGNING_IDENTITY:-}" ]; then
 fi
 
 bun tauri build "${args[@]}"
+
+# Installed where the Settings + picker opens, since Nyx never asks macOS to list it.
+rm -rf /Applications/Nyx.app
+mv "$out/Nyx.app" /Applications/Nyx.app
