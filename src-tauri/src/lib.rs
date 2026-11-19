@@ -93,7 +93,6 @@ pub fn run() {
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-            platform::request_screen_permission();
             let path = app.path().config_dir()?.join("Nyx/protected.json");
             tray::build(app.handle())?;
             let list = store::ProtectionList::load(path);
@@ -102,7 +101,8 @@ pub fn run() {
                 log::error!("hotkey registration failed: {e}");
             }
             // Otherwise Nyx starts quietly in the tray: the dashboard opens only when it needs the user.
-            let needs_user = !platform::has_screen_permission() || list.load_failed || list.apps.is_empty();
+            let granted = platform::has_screen_permission() && platform::has_accessibility_permission();
+            let needs_user = !granted || list.load_failed || list.apps.is_empty();
             engine::start(app.handle().clone(), list);
             if needs_user {
                 show_dashboard(app.handle());

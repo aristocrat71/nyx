@@ -139,8 +139,6 @@ pub fn has_screen_permission() -> bool {
     true
 }
 
-pub fn request_screen_permission() {}
-
 pub fn open_screen_settings() {}
 
 pub fn open_url(url: &str) {
