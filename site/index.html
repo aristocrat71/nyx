@@ -29,6 +29,37 @@
   ul { padding-left: 1.2em; }
   li + li { margin-top: 8px; }
   kbd { font: inherit; font-size: 12px; padding: 2px 7px; border-radius: 5px; background: var(--control); border: 1px solid var(--line); }
+  .show { margin-top: 8px; }
+  .screens { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  figure { display: flex; flex-direction: column; gap: 10px; }
+  figcaption { font-size: 12px; color: var(--muted); text-align: center; }
+  .screen { position: relative; height: 200px; border-radius: 10px; border: 1px solid var(--line); background: #1d2026; overflow: hidden; }
+  .win { position: absolute; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; font-size: 10px; line-height: 1.5; }
+  .notes { left: 6%; top: 14%; width: 50%; height: 64%; }
+  .chat { right: 6%; top: 18%; width: 52%; height: 76%; transition: border-color 0.3s; }
+  [data-step="0"] .you .chat { border-color: var(--amber); }
+  .bar { display: flex; align-items: center; gap: 4px; padding: 5px 7px; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .bar i { width: 5px; height: 5px; border-radius: 50%; background: var(--control); }
+  .bar span { margin-left: 4px; flex: 1; }
+  .tag { width: 9px; }
+  .lines { padding: 10px; display: flex; flex-direction: column; gap: 7px; }
+  .lines b { height: 5px; border-radius: 3px; background: var(--control); }
+  .msgs { padding: 8px; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+  .msgs p { padding: 2px 7px; border-radius: 7px; background: var(--control); }
+  .msgs .me { align-self: flex-end; background: rgb(245 166 35 / 0.18); }
+  .msgs .new { opacity: 0; transition: opacity 0.4s; }
+  .cover { position: absolute; inset: 0; background: #000; display: grid; place-items: center; opacity: 0; transition: opacity 0.35s; }
+  .cover .owl { width: 20px; opacity: 0.5; }
+  .pill { position: absolute; left: 8px; bottom: 8px; font-size: 10px; padding: 2px 8px; border-radius: 99px; background: rgb(245 166 35 / 0.15); color: var(--amber); opacity: 0; transition: opacity 0.3s; }
+  .off { position: absolute; inset: 0; background: #0b0c0e; display: grid; place-items: center; font-size: 11px; color: var(--muted); transition: opacity 0.35s; }
+  .them .pill { display: none; }
+  .live .them .cover, .live .you .pill, [data-step="2"] .new, [data-step="3"] .new { opacity: 1; }
+  .live .off { opacity: 0; }
+  .steps { list-style: none; padding: 0; margin-top: 28px; display: flex; flex-direction: column; gap: 4px; }
+  .steps button { font: inherit; color: var(--muted); background: none; border: 0; padding: 4px 0; text-align: left; cursor: pointer; transition: color 0.3s; }
+  .steps .on button { color: var(--text); }
+  .steps span { display: inline-block; width: 2.2em; }
+  @media (max-width: 600px) { .screens { grid-template-columns: 1fr; } }
   footer { margin-top: 96px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
   footer img { height: 15px; vertical-align: -2px; margin-left: 6px; }
 </style>
@@ -42,6 +73,36 @@
     <a class="get" href="https://github.com/aristocrat71/nyx-app/releases/latest">Download for Mac</a>
     <p class="muted small">Free. Windows and Linux are on the way.</p>
   </header>
+
+  <section>
+    <h2>HOW IT WORKS</h2>
+    <div class="show" data-step="0">
+      <div class="screens">
+        <figure class="you">
+          <div class="screen">
+            <div class="win notes"><div class="bar"><i></i><i></i><i></i><span>Slides</span></div><div class="lines"><b style="width:80%"></b><b style="width:95%"></b><b style="width:60%"></b><b style="width:85%"></b></div></div>
+            <div class="win chat">
+              <div class="bar"><i></i><i></i><i></i><span>Chat</span><img class="tag owl" src="owl.png" alt="private"></div>
+              <div class="msgs"><p>offer's in your inbox</p><p class="me">wait, really??</p><p class="new">keep it quiet for now</p></div>
+              <div class="cover"><img class="owl" src="owl.png" alt=""></div>
+            </div>
+            <div class="pill">● Sharing</div>
+          </div>
+          <figcaption>Your screen</figcaption>
+        </figure>
+        <figure class="them">
+          <div class="screen"><div class="off">Not sharing</div></div>
+          <figcaption>What everyone else sees</figcaption>
+        </figure>
+      </div>
+      <ol class="steps">
+        <li><button><span>01</span>Tell Nyx what's private. Say, your chat app.</button></li>
+        <li><button><span>02</span>Share your screen the way you always do.</button></li>
+        <li><button><span>03</span>Keep chatting. They see a black box, you see everything.</button></li>
+        <li><button><span>04</span>Stop sharing, and Nyx goes quiet again.</button></li>
+      </ol>
+    </div>
+  </section>
 
   <section>
     <h2>WHY WE MADE IT</h2>
@@ -65,5 +126,21 @@
     <a class="muted" href="https://github.com/aristocrat71/nyx-app">GitHub</a>
   </footer>
 </main>
+<script>
+  const show = document.querySelector(".show");
+  const steps = [...show.querySelectorAll(".steps li")];
+  show.querySelector(".them .screen").prepend(...[...show.querySelector(".you .screen").children].map((n) => n.cloneNode(true)));
+  let step = 0, timer;
+  const go = (n) => {
+    step = n % steps.length;
+    show.dataset.step = step;
+    show.classList.toggle("live", step === 1 || step === 2);
+    steps.forEach((li, i) => li.classList.toggle("on", i === step));
+  };
+  const play = () => matchMedia("(prefers-reduced-motion: reduce)").matches || (timer = setInterval(() => go(step + 1), 3200));
+  steps.forEach((li, i) => li.querySelector("button").addEventListener("click", () => { clearInterval(timer); go(i); play(); }));
+  go(0);
+  play();
+</script>
 </body>
 </html>
