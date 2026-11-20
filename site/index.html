@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nyx · share your screen, not everything on it</title>
+<meta name="description" content="Nyx covers the apps you choose with a black placeholder whenever your screen is being shared. You keep using them; nobody else sees them.">
+<link rel="icon" href="owl.png">
+<style>
+  @font-face { font-family: "JetBrains Mono"; src: url("JetBrainsMono-Regular.woff2") format("woff2"); font-weight: 400; }
+  @font-face { font-family: "JetBrains Mono"; src: url("JetBrainsMono-Medium.woff2") format("woff2"); font-weight: 500; }
+  :root { --bg: #0e0f12; --panel: #16181d; --text: #e8e8e8; --muted: #8a8f98; --line: rgb(255 255 255 / 0.09); --control: rgb(255 255 255 / 0.07); --amber: #f5a623; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 400 15px/1.7 "JetBrains Mono", ui-monospace, monospace; }
+  main { max-width: 680px; margin: 0 auto; padding: 72px 24px 48px; }
+  a { color: inherit; }
+  .muted { color: var(--muted); }
+  .owl { filter: invert(1); }
+  header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
+  .tile { width: 88px; height: 88px; border-radius: 20px; background: #000; border: 1px solid rgb(255 255 255 / 0.18); display: grid; place-items: center; }
+  .tile .owl { width: 50px; }
+  h1 { font-size: 34px; font-weight: 500; }
+  .lede { font-size: 17px; }
+  .get { display: inline-block; margin-top: 8px; padding: 10px 18px; border-radius: 8px; background: var(--text); color: var(--bg); font-weight: 500; text-decoration: none; }
+  .small { font-size: 12px; }
+  section { margin-top: 88px; }
+  h2 { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 18px; }
+  p + p { margin-top: 14px; }
+  ul { padding-left: 1.2em; }
+  li + li { margin-top: 8px; }
+  kbd { font: inherit; font-size: 12px; padding: 2px 7px; border-radius: 5px; background: var(--control); border: 1px solid var(--line); }
+  footer { margin-top: 96px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+  footer img { height: 15px; vertical-align: -2px; margin-left: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="tile"><img class="owl" src="owl.png" alt=""></div>
+    <h1>Nyx</h1>
+    <p class="lede">Share your screen, not everything on it.</p>
+    <a class="get" href="https://github.com/aristocrat71/nyx-app/releases/latest">Download for Mac</a>
+    <p class="muted small">Free. Windows and Linux are on the way.</p>
+  </header>
+
+  <section>
+    <h2>WHY WE MADE IT</h2>
+    <p>We kept doing the same nervous dance before every call: close Slack, hide the inbox, minimise the half-written message, then pray nothing pops up mid-demo.</p>
+    <p>So we built the thing we wanted. Tell Nyx which apps and sites are private once, and forget about it. When you share your screen, those windows turn black for everyone watching. You still see them and use them as normal.</p>
+  </section>
+
+  <section>
+    <h2>THE SHORT VERSION</h2>
+    <ul>
+      <li>Works with Zoom, Meet, Teams, Slack huddles, anything that shares your screen.</li>
+      <li>Add an app from the menu bar, or press <kbd>⌃</kbd> <kbd>⇧</kbd> <kbd>L</kbd> while you're in it.</li>
+      <li>Websites too: list <code>youtube.com</code> and only that tab gets covered.</li>
+      <li>Asleep until you share. Nothing is recorded, nothing is uploaded.</li>
+      <li>If something goes wrong, Nyx keeps the cover up rather than risk a peek.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span class="muted">Made with care by Team<a href="https://unravel.tech"><img src="unravel.png" alt="Unravel"></a></span>
+    <a class="muted" href="https://github.com/aristocrat71/nyx-app">GitHub</a>
+  </footer>
+</main>
+</body>
+</html>
