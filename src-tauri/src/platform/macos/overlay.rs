@@ -98,7 +98,7 @@ pub(super) fn overlay_window(mtm: MainThreadMarker, level: isize) -> Retained<NS
 }
 
 const CAPTION: &[u8] = include_bytes!("../../../assets/caption.png");
-const CAPTION_SIZE: NSSize = NSSize::new(522.0, 95.0);
+const CAPTION_SIZE: NSSize = NSSize::new(522.0, 169.0);
 const BLEED_WHILE_MOVING: f64 = 24.0;
 const SETTLE_TICKS: u8 = 6;
 const SPARES: usize = 8;

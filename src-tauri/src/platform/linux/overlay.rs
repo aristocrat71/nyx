@@ -124,7 +124,7 @@ fn place(x: &X, window: Window, r: Rectangle, before: Option<Rectangle>) {
     }
 }
 
-/// The @2x caption PNG, halved to 522x95 and composited onto black, as the server's BGRX.
+/// The @2x caption PNG, halved to 522x169 and composited onto black, as the server's BGRX.
 fn caption() -> &'static (Vec<u8>, u16, u16) {
     static CAPTION: OnceLock<(Vec<u8>, u16, u16)> = OnceLock::new();
     CAPTION.get_or_init(|| {
