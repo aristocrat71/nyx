@@ -31,8 +31,10 @@
   kbd { font: inherit; font-size: 12px; padding: 2px 7px; border-radius: 5px; background: var(--control); border: 1px solid var(--line); }
   .show { position: relative; margin-top: 8px; }
   .link { position: absolute; left: -30px; top: 150px; width: 20px; border: 1.5px solid rgb(255 255 255 / 0.55); border-right: 0; border-radius: 8px 0 0 8px; transition: height 0.4s ease; }
-  .screens { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  figure { display: flex; flex-direction: column; gap: 10px; }
+  .link::before { content: ""; position: absolute; left: 100%; top: -1.5px; width: var(--reach, 0px); border-top: inherit; transition: width 0.4s ease; }
+  .screens { display: flex; justify-content: center; gap: 20px; }
+  figure { flex: 0 0 calc(50% - 10px); display: flex; flex-direction: column; gap: 10px; }
+  [data-step="0"] .them { display: none; }
   figcaption { font-size: 12px; color: var(--muted); text-align: center; }
   .screen { position: relative; height: 200px; border-radius: 10px; border: 1px solid var(--line); background: #1d2026; overflow: hidden; }
   .win { position: absolute; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; font-size: 10px; line-height: 1.5; }
@@ -60,7 +62,7 @@
   .steps button { font: inherit; color: var(--muted); background: none; border: 0; padding: 4px 0; text-align: left; cursor: pointer; transition: color 0.3s; }
   .steps .on button { color: var(--text); }
   .steps span { display: inline-block; width: 2.2em; }
-  @media (max-width: 600px) { .screens { grid-template-columns: 1fr; } .link { display: none; } }
+  @media (max-width: 600px) { .screens { flex-direction: column; } .link { display: none; } }
   footer { margin-top: 96px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
   footer img { height: 15px; vertical-align: -2px; margin-left: 6px; }
 </style>
@@ -138,9 +140,10 @@
     show.dataset.step = step;
     show.classList.toggle("live", step === 1 || step === 2);
     steps.forEach((li, i) => li.classList.toggle("on", i === step));
+    link.style.setProperty("--reach", show.querySelector(".you").offsetLeft + "px");
     link.style.height = steps[step].offsetTop + steps[step].offsetHeight / 2 - link.offsetTop + "px";
   };
-  const play = () => matchMedia("(prefers-reduced-motion: reduce)").matches || (timer = setInterval(() => go(step + 1), 3200));
+  const play = () => matchMedia("(prefers-reduced-motion: reduce)").matches || (timer = setInterval(() => go(step + 1), 4200));
   steps.forEach((li, i) => li.querySelector("button").addEventListener("click", () => { clearInterval(timer); go(i); play(); }));
   go(0);
   addEventListener("resize", () => go(step));
