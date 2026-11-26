@@ -158,7 +158,11 @@ pub fn reset_stale_permissions(bundle_id: &str) {
 pub fn open_screen_settings() {
     // The only way macOS lists Nyx under Screen Recording; it costs one system prompt.
     CGRequestScreenCaptureAccess();
-    open_url("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture");
+    // macOS records Nyx just after the request, and a list already loading would miss it.
+    std::thread::spawn(|| {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        open_url("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture");
+    });
 }
 
 /// Up front even when macOS declines to activate Nyx, as it may right after relaunching it.
