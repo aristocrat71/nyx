@@ -78,6 +78,7 @@
       </div>
     {:else}
       <div class="label section">PROTECTED APPS</div>
+      <button class="pill add" onclick={() => (open = "app")}>+ Add app…</button>
       {#each snap.apps as app (app.id)}
         <div class="row">
           {#if app.path}<img class="icon" src={api.icon(app.path)} alt="" />{:else}<span class="icon blank"></span>{/if}
@@ -85,15 +86,14 @@
           <button class="remove" title="Stop protecting {app.name}" onclick={() => api.removeApp(app.id)}>Remove</button>
         </div>
       {/each}
-      <button class="pill add" onclick={() => (open = "app")}>+ Add app…</button>
       <div class="label section">PROTECTED SITES</div>
+      <button class="pill add" onclick={() => (open = "site")}>+ Add website…</button>
       {#each snap.sites as host (host)}
         <div class="row site">
           <span class="grow">{host}</span>
           <button class="remove" title="Stop covering {host}" onclick={() => api.removeSite(host)}>Remove</button>
         </div>
       {/each}
-      <button class="pill add" onclick={() => (open = "site")}>+ Add website…</button>
     {/if}
   </main>
 
@@ -151,7 +151,7 @@
   .gear { margin-left: auto; flex: none; width: 26px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--muted); background: var(--control); border: 1px solid var(--border); }
   .banner { display: flex; align-items: center; gap: 10px; padding: 12px; font-size: 11px; color: var(--amber-text); background: color-mix(in srgb, var(--amber) 12%, transparent); }
   .banner.failed { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); line-height: 1.5; }
-  .add { margin: 8px 16px 0; }
+  .add { margin: 0 16px 8px; }
   .backdrop { position: fixed; inset: 0; z-index: 5; }
   .grow { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .icon { width: 20px; height: 20px; }
