@@ -2,7 +2,11 @@
 
 All notable changes to Nyx are recorded here.
 
-## [Unreleased]
+## [0.1.3] - 2026-11-26
+
+### Added
+
+- **Version in Settings.** Settings show which version of Nyx is running.
 
 ### Changed
 
