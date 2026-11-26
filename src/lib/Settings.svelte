@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Snapshot } from "./api";
 
-  let { dark = $bindable(), platform }: { dark: boolean; platform: Snapshot["platform"] } = $props();
+  let { dark = $bindable(), platform, home, version }: { dark: boolean; platform: Snapshot["platform"]; home: string; version: string | null } =
+    $props();
   const notes = {
     macos: "macOS shows a screen-sharing indicator while Nyx mirrors a window, which only happens during a share. The mirror never leaves your Mac.",
     windows: "Windows may draw a yellow border around a window while Nyx mirrors it. The mirror never leaves your PC.",
@@ -19,7 +20,12 @@
       <button class:on={dark} onclick={() => (dark = true)}>Dark</button>
     </div>
   </div>
+  <div class="line">
+    <span>Version</span>
+    <span class="muted">{version ?? "…"}</span>
+  </div>
   <div class="rule"></div>
+  <p class="muted">Nyx lives in your {home} as an owl. Click it, or open Nyx again, to come back here.</p>
   <p class="muted">{notes[platform]}</p>
 </div>
 
@@ -33,4 +39,5 @@
   .segments .on { color: var(--text); background: var(--selection); }
   .rule { height: 1px; background: var(--hairline); }
   p { padding: 14px; font-size: 11px; line-height: 1.5; }
+  p + p { padding-top: 0; }
 </style>

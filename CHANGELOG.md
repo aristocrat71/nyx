@@ -2,6 +2,14 @@
 
 All notable changes to Nyx are recorded here.
 
+## [Unreleased]
+
+### Changed
+
+- **Where to find Nyx.** The intro now ends by showing the owl in the menu bar,
+  and Settings says how to get back to the dashboard: click the owl, or open
+  Nyx again.
+
 ## [0.1.2] - 2026-11-26
 
 ### Changed

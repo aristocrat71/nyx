@@ -12,7 +12,7 @@
   :root { --bg: #0e0f12; --panel: #16181d; --text: #e8e8e8; --muted: #8a8f98; --line: rgb(255 255 255 / 0.09); --control: rgb(255 255 255 / 0.07); --amber: #f5a623; }
   * { box-sizing: border-box; margin: 0; }
   body { background: var(--bg); color: var(--text); font: 400 15px/1.7 "JetBrains Mono", ui-monospace, monospace; }
-  main { max-width: 680px; margin: 0 auto; padding: 72px 24px 48px; }
+  main { zoom: 1.15; max-width: 680px; margin: 0 auto; padding: 72px 24px 48px; }
   a { color: inherit; }
   .muted { color: var(--muted); }
   .owl { filter: invert(1); }
@@ -24,6 +24,7 @@
   .get { display: inline-block; margin-top: 8px; padding: 10px 18px; border-radius: 8px; background: var(--text); color: var(--bg); font-weight: 500; text-decoration: none; }
   .small { font-size: 12px; }
   section { margin-top: 88px; }
+  #how { margin-top: 48px; }
   h2 { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 18px; }
   p + p { margin-top: 14px; }
   ul { padding-left: 1.2em; }
@@ -62,6 +63,7 @@
   .steps .on button { color: var(--text); }
   .steps span { display: inline-block; width: 2.2em; }
   @media (max-width: 600px) { .screens { flex-direction: column; } .link { display: none; } }
+  .latest { margin: -14px 0 -6px; }
   .tabs { display: flex; gap: 18px; margin-bottom: 18px; }
   .tabs button { font: inherit; color: var(--muted); background: none; border: 0; padding: 0 0 4px; border-bottom: 1.5px solid transparent; cursor: pointer; }
   .tabs .on { color: var(--text); border-color: var(--text); }
@@ -98,13 +100,14 @@
 <nav class="index">
   <a href="#how">HOW IT WORKS</a>
   <a href="#why">WHY WE MADE IT</a>
-  <a href="#short">THE SHORT VERSION</a>
+  <a href="#features">FEATURE SHOWCASE</a>
   <a href="#install">INSTALL</a>
 </nav>
 <main>
   <header>
     <div class="tile"><img class="owl" src="owl.png" alt=""></div>
     <h1>Nyx</h1>
+    <p class="muted small latest" hidden><a></a></p>
     <p class="lede">Share your screen, not everything on it.</p>
     <a class="get" href="#install">Install Now</a>
   </header>
@@ -117,7 +120,7 @@
           <div class="screen">
             <div class="win notes"><div class="bar"><i></i><i></i><i></i><span>Slides</span></div><div class="lines"><b style="width:80%"></b><b style="width:95%"></b><b style="width:60%"></b><b style="width:85%"></b></div></div>
             <div class="win chat">
-              <div class="bar"><i></i><i></i><i></i><span>Sibling 😒</span></div>
+              <div class="bar"><i></i><i></i><i></i><span>John Cena 😒</span></div>
               <div class="msgs"><p>i ate your leftovers</p><p class="me">you WHAT</p><p class="new">they were mid tbh</p></div>
               <div class="cover"><img class="owl" src="owl.png" alt=""></div>
             </div>
@@ -133,8 +136,8 @@
       <div class="link"></div>
       <ol class="steps">
         <li><button><span>01</span>Tell Nyx what's private. For eg. WhatsApp</button></li>
-        <li><button><span>02</span>Share your screen the way you always do.</button></li>
-        <li><button><span>03</span>Keep texting. They see a black box, you see everything.</button></li>
+        <li><button><span>02</span>Share your entire screen...</button></li>
+        <li><button><span>03</span>Keep texting. They see Nyx's cover, you see everything.</button></li>
       </ol>
     </div>
   </section>
@@ -145,14 +148,15 @@
     <p>Ugh, all this was too tiring. So we built the thing we wanted. Tell Nyx which apps and sites are private once, and forget about it. When you share your screen, those windows turn black for everyone watching while you still see them and use them normally.</p>
   </section>
 
-  <section id="short">
-    <h2>THE SHORT VERSION</h2>
+  <section id="features">
+    <h2>FEATURE SHOWCASE</h2>
     <ul>
-      <li>Works with Zoom, Meet, Teams, Slack huddles, anything that shares your screen.</li>
-      <li>Add an app from the menu bar, or press <kbd>⌃</kbd> <kbd>⇧</kbd> <kbd>L</kbd> while you're in it.</li>
+      <li>Works with Zoom, Meet, Teams... anything capturing your screen.</li>
       <li>Websites too: list <code>youtube.com</code> and only that tab gets covered.</li>
-      <li>Asleep until you share. Nothing is recorded, nothing is uploaded.</li>
-      <li>If something goes wrong, Nyx keeps the cover up rather than risk a peek.</li>
+      <li>Lives in your menu bar as an owl. Check your right side tray icons :)</li>
+      <li>Press <kbd>⌃</kbd> <kbd>⇧</kbd> <kbd>L</kbd> to hide/unhide that app instantly.</li>
+      <li>Updates are installed automatically on restart or after 6 hours of release.</li>
+      <li>Nothing is recorded. The updater only polls for releases.</li>
     </ul>
   </section>
 
@@ -203,6 +207,7 @@
   steps.forEach((li, i) => li.querySelector("button").addEventListener("click", () => { clearInterval(timer); go(i); play(); }));
   go(0);
   addEventListener("resize", () => go(step));
+
   play();
 
   const tabs = [...document.querySelectorAll(".tabs button")];
@@ -221,6 +226,15 @@
   };
   addEventListener("scroll", () => requestAnimationFrame(mark), { passive: true });
   mark();
+  fetch("https://api.github.com/repos/aristocrat71/nyx-app/releases/latest")
+    .then((r) => (r.ok ? r.json() : Promise.reject()))
+    .then((rel) => {
+      const latest = document.querySelector(".latest");
+      latest.querySelector("a").textContent = rel.tag_name.replace("nyx-", "");
+      latest.querySelector("a").href = rel.html_url;
+      latest.hidden = false;
+    })
+    .catch(() => {});
   const copy = document.querySelector(".cmd button");
   copy.addEventListener("click", () => navigator.clipboard.writeText(copy.previousElementSibling.textContent).then(() => (copy.textContent = "copied")));
 </script>
