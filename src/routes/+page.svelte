@@ -126,7 +126,7 @@
       {#if open === "app"}<AppPicker exclude={snap.apps.map((a) => a.id)} onclose={close} />{:else}<SiteEntry onclose={close} />{/if}
     </div>
   {/if}
-  {#if open === "settings"}<Settings bind:dark platform={snap.platform} />{/if}
+  {#if open === "settings"}<Settings bind:dark platform={snap.platform} {home} />{/if}
 
   <div class="hr"></div>
   <footer>
