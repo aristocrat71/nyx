@@ -2,12 +2,14 @@
   import { onMount } from "svelte";
   import { listen } from "@tauri-apps/api/event";
   import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { getVersion } from "@tauri-apps/api/app";
   import * as api from "$lib/api";
   import AppPicker from "$lib/AppPicker.svelte";
   import SiteEntry from "$lib/SiteEntry.svelte";
   import Settings from "$lib/Settings.svelte";
   import Intro from "$lib/Intro.svelte";
   import Permissions from "$lib/Permissions.svelte";
+  import Updated from "$lib/Updated.svelte";
 
   let snap = $state<api.Snapshot | null>(null);
   let open = $state<"app" | "site" | "settings" | null>(null);
@@ -20,15 +22,21 @@
     getCurrentWindow().setTheme(dark ? "dark" : "light");
   });
   let introDone = $state(localStorage.getItem("nyx.intro") === "done");
+  // The last version the dashboard showed: a different one after the intro means Nyx was updated.
+  let version = $state<string | null>(null);
+  let seen = $state(localStorage.getItem("nyx.version"));
+  const markSeen = () => version && localStorage.setItem("nyx.version", (seen = version));
   const finishIntro = () => {
     localStorage.setItem("nyx.intro", "done");
     introDone = true;
+    markSeen();
   };
   const refresh = async () => (snap = await api.snapshot());
   const empty = $derived(snap !== null && snap.apps.length === 0 && snap.sites.length === 0);
 
   onMount(() => {
     refresh();
+    getVersion().then((v) => (version = v));
     const unlisten = listen("changed", refresh);
     // Grants arrive from System Settings, which sends no event, so they are polled while shown.
     const timer = setInterval(() => !document.hidden && refresh(), 2000);
@@ -45,6 +53,8 @@
 
 {#if snap && !introDone}
   <Intro hotkey={snap.hotkey} ondone={finishIntro} />
+{:else if snap && version && seen !== version}
+  <Updated {version} from={seen} ondone={markSeen} />
 {:else if snap && !(snap.screenPermission && snap.accessibilityPermission)}
   <Permissions {snap} />
 {:else if snap}
