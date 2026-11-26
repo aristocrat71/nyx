@@ -15,7 +15,6 @@
   main { zoom: 1.15; max-width: 680px; margin: 0 auto; padding: 72px 24px 48px; }
   a { color: inherit; }
   .muted { color: var(--muted); }
-  .owl { filter: invert(1); }
   header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
   .logo { height: 88px; border-radius: 17% / 14.2%; box-shadow: 0 0 0 1px rgb(255 255 255 / 0.18); }
   h1 { font-size: 34px; font-weight: 500; }
@@ -51,7 +50,7 @@
   .msgs .me { align-self: flex-end; background: rgb(245 166 35 / 0.18); }
   .msgs .new { opacity: 0; transition: opacity 0.4s; }
   .cover { position: absolute; inset: 0; background: #000; display: grid; place-items: center; opacity: 0; transition: opacity 0.35s; }
-  .cover .owl { width: 20px; opacity: 0.5; }
+  .cover .logo { height: 26px; box-shadow: none; }
   .pill { position: absolute; left: 8px; bottom: 8px; font-size: 10px; padding: 2px 8px; border-radius: 99px; background: rgb(245 166 35 / 0.15); color: var(--amber); opacity: 0; transition: opacity 0.3s; }
   .off { position: absolute; inset: 0; background: #0b0c0e; display: grid; place-items: center; font-size: 11px; color: var(--muted); transition: opacity 0.35s; }
   .them .pill { display: none; }
@@ -72,7 +71,6 @@
   .door { display: flex; gap: 22px; align-items: center; margin-top: 18px; }
   .alert { position: static; flex: 0 0 190px; padding: 14px; text-align: center; font-size: 10px; }
   .alert b { display: block; font-size: 11px; font-weight: 500; margin: 6px 0 4px; }
-  .alert .logo { height: 28px; box-shadow: none; }
   .alert span { display: inline-block; margin-top: 10px; padding: 1px 12px; border-radius: 5px; background: var(--control); }
   .trail { list-style: none; padding: 0; font-size: 13px; }
   .trail li { position: relative; padding-left: 18px; }
@@ -121,7 +119,7 @@
             <div class="win chat">
               <div class="bar"><i></i><i></i><i></i><span>John Cena 😒</span></div>
               <div class="msgs"><p>i ate your leftovers</p><p class="me">you WHAT</p><p class="new">they were mid tbh</p></div>
-              <div class="cover"><img class="owl" src="owl.png" alt=""></div>
+              <div class="cover"><img class="logo" src="logo.png" alt=""></div>
             </div>
             <div class="pill">● Sharing</div>
           </div>
@@ -169,7 +167,7 @@
       <a class="get" href="https://github.com/aristocrat71/nyx-app/releases/latest/download/Nyx.dmg">Download for Mac</a>
       <p>Please note that this will trigger the Mac's Gatekeeper which stops the owl from running on your machine</p>
       <div class="door">
-        <div class="win alert"><img class="logo" src="logo.png" alt=""><b>“Nyx” Not Opened</b><p class="muted">Apple could not verify “Nyx” is free of malware.</p><span>Done</span></div>
+        <div class="win alert"><b>“Nyx” Not Opened</b><p class="muted">Apple could not verify “Nyx” is free of malware.</p><span>Done</span></div>
         <ol class="trail">
           <li>Click Done. Don't bin it, the owl is innocent.</li>
           <li>System Settings › Privacy &amp; Security</li>
