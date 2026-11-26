@@ -12,6 +12,18 @@
   let snap = $state<api.Snapshot | null>(null);
   let open = $state<"app" | "site" | "settings" | null>(null);
   const close = () => (open = null);
+  let at = $state({ x: 0, y: 0 });
+  const show = (what: "app" | "site", e: MouseEvent) => {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    at = { x: r.right + 8, y: r.top };
+    open = what;
+  };
+  // Pulls a panel opened beside its button back inside the window when it would spill out.
+  const fit = (el: HTMLElement) => {
+    const r = (el.firstElementChild as HTMLElement).getBoundingClientRect();
+    el.style.left = `${Math.max(8, Math.min(r.left, innerWidth - r.width - 8))}px`;
+    el.style.top = `${Math.max(8, Math.min(r.top, innerHeight - r.height - 8))}px`;
+  };
   // Starts on whatever the system is set to, then follows the settings switch.
   let dark = $state(JSON.parse(localStorage.getItem("nyx.dark") ?? String(matchMedia("(prefers-color-scheme: dark)").matches)));
   $effect(() => {
@@ -73,12 +85,12 @@
       <div class="empty">
         <div class="owl big"></div>
         <p class="muted">Nothing protected</p>
-        <button class="pill" onclick={() => (open = "app")}>+ Add app…</button>
-        <button class="pill" onclick={() => (open = "site")}>+ Add website…</button>
+        <button class="pill" onclick={(e) => show("app", e)}>+ Add app…</button>
+        <button class="pill" onclick={(e) => show("site", e)}>+ Add website…</button>
       </div>
     {:else}
       <div class="label section">PROTECTED APPS</div>
-      <button class="pill add" onclick={() => (open = "app")}>+ Add app…</button>
+      <button class="pill add" onclick={(e) => show("app", e)}>+ Add app…</button>
       {#each snap.apps as app (app.id)}
         <div class="row">
           {#if app.path}<img class="icon" src={api.icon(app.path)} alt="" />{:else}<span class="icon blank"></span>{/if}
@@ -87,7 +99,7 @@
         </div>
       {/each}
       <div class="label section">PROTECTED SITES</div>
-      <button class="pill add" onclick={() => (open = "site")}>+ Add website…</button>
+      <button class="pill add" onclick={(e) => show("site", e)}>+ Add website…</button>
       {#each snap.sites as host (host)}
         <div class="row site">
           <span class="grow">{host}</span>
@@ -98,8 +110,11 @@
   </main>
 
   {#if open}<div class="backdrop" role="presentation" onclick={close}></div>{/if}
-  {#if open === "app"}<AppPicker exclude={snap.apps.map((a) => a.id)} onclose={close} />{/if}
-  {#if open === "site"}<SiteEntry onclose={close} />{/if}
+  {#if open === "app" || open === "site"}
+    <div class="anchor" style="left: {at.x}px; top: {at.y}px" use:fit>
+      {#if open === "app"}<AppPicker exclude={snap.apps.map((a) => a.id)} onclose={close} />{:else}<SiteEntry onclose={close} />{/if}
+    </div>
+  {/if}
   {#if open === "settings"}<Settings bind:dark platform={snap.platform} />{/if}
 
   <div class="hr"></div>
@@ -152,6 +167,7 @@
   .banner { display: flex; align-items: center; gap: 10px; padding: 12px; font-size: 11px; color: var(--amber-text); background: color-mix(in srgb, var(--amber) 12%, transparent); }
   .banner.failed { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); line-height: 1.5; }
   .add { margin: 0 16px 8px; }
+  .anchor { position: fixed; z-index: 10; }
   .backdrop { position: fixed; inset: 0; z-index: 5; }
   .grow { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .icon { width: 20px; height: 20px; }

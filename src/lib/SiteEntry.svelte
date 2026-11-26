@@ -16,7 +16,7 @@
   }
 </script>
 
-<form class="panel sheet entry" onsubmit={commit}>
+<form class="panel entry" onsubmit={commit}>
   <!-- svelte-ignore a11y_autofocus -->
   <input placeholder="youtube.com" bind:value={field} autofocus />
   <!-- Only once something typed is rejected: shown up front it repeats the placeholder. -->
