@@ -62,6 +62,25 @@
   .steps .on button { color: var(--text); }
   .steps span { display: inline-block; width: 2.2em; }
   @media (max-width: 600px) { .screens { flex-direction: column; } .link { display: none; } }
+  .tabs { display: flex; gap: 18px; margin-bottom: 18px; }
+  .tabs button { font: inherit; color: var(--muted); background: none; border: 0; padding: 0 0 4px; border-bottom: 1.5px solid transparent; cursor: pointer; }
+  .tabs .on { color: var(--text); border-color: var(--text); }
+  .cmd { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 14px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); font-size: 12px; }
+  .cmd code { flex: 1; overflow-x: auto; white-space: nowrap; }
+  .cmd button { font: inherit; color: var(--muted); background: none; border: 0; cursor: pointer; }
+  .door { display: flex; gap: 22px; align-items: center; margin-top: 18px; }
+  .alert { position: static; flex: 0 0 190px; padding: 14px; text-align: center; font-size: 10px; }
+  .alert b { display: block; font-size: 11px; font-weight: 500; margin: 6px 0 4px; }
+  .alert .owl { width: 22px; opacity: 0.6; }
+  .alert span { display: inline-block; margin-top: 10px; padding: 1px 12px; border-radius: 5px; background: var(--control); }
+  .trail { list-style: none; padding: 0; font-size: 13px; }
+  .trail li { position: relative; padding-left: 18px; }
+  .trail li::before { content: ""; position: absolute; left: 3px; top: 0.75em; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .trail li:not(:last-child)::after { content: ""; position: absolute; left: 5.5px; top: 1.3em; height: calc(100% + 2px); border-left: 1px dashed var(--line); }
+  .trail li:last-child { color: var(--amber); }
+  .trail li:last-child::before { background: var(--amber); box-shadow: 0 0 0 4px rgb(245 166 35 / 0.15); }
+  .cmd + p, .door + p { margin-top: 14px; }
+  @media (max-width: 600px) { .door { flex-direction: column; align-items: stretch; } }
   footer { margin-top: 96px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
   footer img { height: 15px; vertical-align: -2px; margin-left: 6px; }
 </style>
@@ -72,8 +91,8 @@
     <div class="tile"><img class="owl" src="owl.png" alt=""></div>
     <h1>Nyx</h1>
     <p class="lede">Share your screen, not everything on it.</p>
-    <a class="get" href="https://github.com/aristocrat71/nyx-app/releases/latest">Download for Mac</a>
-    <p class="muted small">Windows and Linux are on the way.</p>
+    <a class="get" href="https://github.com/aristocrat71/nyx-app/releases/latest/download/Nyx.dmg">Download for Mac</a>
+    <p class="muted small">or <a href="#install">install from the terminal</a></p>
   </header>
 
   <section>
@@ -123,6 +142,28 @@
     </ul>
   </section>
 
+  <section id="install">
+    <h2>INSTALL</h2>
+    <div class="tabs"><button data-os="mac">macOS</button><button data-os="win">Windows</button><button data-os="linux">Linux</button></div>
+    <div data-panel="mac">
+      <p>One line. It checks the download against its published checksum before anything lands in Applications.</p>
+      <div class="cmd"><code>curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx-app/main/install.sh | bash</code><button>copy</button></div>
+      <p>Prefer clicking? Grab the <a href="https://github.com/aristocrat71/nyx-app/releases/latest/download/Nyx.dmg">.dmg</a> and drag Nyx into Applications. One catch: we haven't paid Apple's $99 bouncer yet, so the first time you open it, macOS stops the owl at the door.</p>
+      <div class="door">
+        <div class="win alert"><img class="owl" src="owl.png" alt=""><b>“Nyx” Not Opened</b><p class="muted">Apple could not verify “Nyx” is free of malware.</p><span>Done</span></div>
+        <ol class="trail">
+          <li>Click Done. Don't bin it, the owl is innocent.</li>
+          <li>System Settings › Privacy &amp; Security</li>
+          <li>Scroll to Security, Nyx is waiting there</li>
+          <li>Open Anyway, then your password. Once, never again.</li>
+        </ol>
+      </div>
+      <p class="muted small">The one-line install vouches for Nyx on your behalf, so it never meets the bouncer.</p>
+    </div>
+    <div data-panel="win" hidden><p class="muted">Written and compile-checked, not shipped yet. It will be an installer and a one-line PowerShell command, right here.</p></div>
+    <div data-panel="linux" hidden><p class="muted">X11 only, not shipped yet. It will be a .deb, an AppImage and the same one-line command, right here.</p></div>
+  </section>
+
   <footer>
     <span class="muted">Made with care by Team<a href="https://unravel.tech"><img src="unravel.png" alt="Unravel"></a></span>
     <a class="muted" href="https://github.com/aristocrat71/nyx-app">GitHub</a>
@@ -147,6 +188,16 @@
   go(0);
   addEventListener("resize", () => go(step));
   play();
+
+  const tabs = [...document.querySelectorAll(".tabs button")];
+  const pick = (os) => {
+    tabs.forEach((b) => b.classList.toggle("on", b.dataset.os === os));
+    document.querySelectorAll("[data-panel]").forEach((p) => (p.hidden = p.dataset.panel !== os));
+  };
+  tabs.forEach((b) => b.addEventListener("click", () => pick(b.dataset.os)));
+  pick(/Win/.test(navigator.platform) ? "win" : /Linux/.test(navigator.platform) ? "linux" : "mac");
+  const copy = document.querySelector(".cmd button");
+  copy.addEventListener("click", () => navigator.clipboard.writeText(copy.previousElementSibling.textContent).then(() => (copy.textContent = "copied")));
 </script>
 </body>
 </html>
