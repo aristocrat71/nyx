@@ -128,7 +128,7 @@ pub fn run() {
                 log::error!("hotkey registration failed: {e}");
             }
             #[cfg(target_os = "macos")]
-            if !cfg!(debug_assertions) {
+            if !cfg!(debug_assertions) && update::first_launch_after_update(list.path().parent().unwrap_or(list.path()), &app.package_info().version.to_string()) {
                 platform::reset_stale_permissions(&app.config().identifier);
             }
             // Otherwise Nyx starts quietly in the tray: the dashboard opens only when it needs the user.
