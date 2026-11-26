@@ -79,7 +79,7 @@
   .trail li:not(:last-child)::after { content: ""; position: absolute; left: 5.5px; top: 1.3em; height: calc(100% + 2px); border-left: 1px dashed var(--line); }
   .trail li:last-child { color: var(--amber); }
   .trail li:last-child::before { background: var(--amber); box-shadow: 0 0 0 4px rgb(245 166 35 / 0.15); }
-  .cmd + p, .door + p { margin-top: 14px; }
+  .cmd + p, .door + p, .get + p { margin-top: 14px; }
   @media (max-width: 600px) { .door { flex-direction: column; align-items: stretch; } }
   footer { margin-top: 96px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
   footer img { height: 15px; vertical-align: -2px; margin-left: 6px; }
@@ -145,9 +145,11 @@
     <h2>INSTALL</h2>
     <div class="tabs"><button data-os="mac">macOS</button><button data-os="win">Windows</button><button data-os="linux">Linux</button></div>
     <div data-panel="mac">
-      <p>One line. It checks the download against its published checksum before anything lands in Applications.</p>
+      <p>CLI method: Paste this command on your terminal</p>
       <div class="cmd"><code>curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx-app/main/install.sh | bash</code><button>copy</button></div>
-      <p>Prefer clicking? Grab the <a href="https://github.com/aristocrat71/nyx-app/releases/latest/download/Nyx.dmg">.dmg</a> and drag Nyx into Applications. One catch: we haven't paid Apple's $99 bouncer yet, so the first time you open it, macOS stops the owl at the door.</p>
+      <p>DMG method: Grab the dmg below and drag Nyx into Applications.</p>
+      <a class="get" href="https://github.com/aristocrat71/nyx-app/releases/latest/download/Nyx.dmg">Download for Mac</a>
+      <p>Please note that this will trigger the Mac's Gatekeeper which stops the owl from running on your machine</p>
       <div class="door">
         <div class="win alert"><img class="owl" src="owl.png" alt=""><b>“Nyx” Not Opened</b><p class="muted">Apple could not verify “Nyx” is free of malware.</p><span>Done</span></div>
         <ol class="trail">
