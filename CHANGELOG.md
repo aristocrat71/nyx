@@ -24,6 +24,15 @@ hand once, and every later release arrives on its own.
 - **Pickers open beside their button.** The app picker and the website field open
   next to the button you clicked, instead of at the top of the window.
 
+## [Unreleased]
+
+### Changed
+
+- **Always reachable.** Opening Nyx again from Spotlight or Finder opens the
+  dashboard, so a crowded menu bar that hides the owl no longer locks you out.
+  The owl also starts at the right end of the menu bar, the last place macOS
+  hides icons.
+
 ## [0.1.0] - 2026-11-26
 
 First release. Nyx sits in the menu bar and blacks out the apps and sites you

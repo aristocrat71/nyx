@@ -126,6 +126,16 @@ pub fn dark_menu_bar() -> bool {
     style.is_some_and(|s| s.to_string() == "Dark")
 }
 
+/// Puts the owl at the right end of the menu bar, the last place macOS hides icons when it is crowded.
+/// Undocumented, and only until the user drags the owl elsewhere: macOS then saves their spot here.
+pub fn prefer_menu_bar_right_end() {
+    let defaults = NSUserDefaults::standardUserDefaults();
+    let key = NSString::from_str("NSStatusItem Preferred Position Item-0");
+    if defaults.objectForKey(&key).is_none() {
+        defaults.setDouble_forKey(0.0, &key);
+    }
+}
+
 pub fn has_screen_permission() -> bool {
     CGPreflightScreenCaptureAccess()
 }
