@@ -21,7 +21,7 @@
     <div class="bar"><i></i><i></i><i></i></div>
     <div class="body">
       <span style="width: 70%"></span><span style="width: 90%"></span><span style="width: 55%"></span>
-      <div class="cover"><div class="owl"></div></div>
+      <div class="cover"><img class="logo" src="/logo.png" alt="" /></div>
     </div>
   </div>
 {/snippet}
@@ -92,7 +92,7 @@
   .body { position: relative; height: 84px; padding: 12px 10px; display: flex; flex-direction: column; gap: 8px; }
   .body span { height: 6px; border-radius: 3px; background: var(--control); }
   .cover { position: absolute; inset: 0; background: #000; display: grid; place-items: center; opacity: 0; transition: opacity 0.3s; }
-  .cover .owl { width: 22px; height: 26px; color: #fff; opacity: 0.5; }
+  .cover .logo { height: 26px; box-shadow: none; }
   .covered .cover { opacity: 1; }
 
   .greeting { display: flex; align-items: baseline; gap: 0.5em; font-size: 15px; }
