@@ -1,6 +1,6 @@
 {
   "name": "nyx",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Share your screen, not everything on it.",
   "type": "module",
   "scripts": {
