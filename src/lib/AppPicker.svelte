@@ -15,7 +15,7 @@
   }
 </script>
 
-<div class="panel sheet picker">
+<div class="panel picker">
   <!-- svelte-ignore a11y_autofocus -->
   <input placeholder="Filter…" bind:value={filter} autofocus />
   <div class="rule"></div>
