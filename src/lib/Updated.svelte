@@ -20,7 +20,7 @@
 </script>
 
 <div class="updated" data-tauri-drag-region>
-  <div class="tile"><div class="owl"></div></div>
+  <img class="logo" src="/logo.png" alt="" />
   <h1>Nyx was <span class="add">updated</span> !</h1>
   {#if highlights.length}
     <ul>
@@ -33,8 +33,7 @@
 
 <style>
   .updated { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 30px 20px; }
-  .tile { width: 84px; height: 84px; border-radius: 19px; background: #000; display: grid; place-items: center; border: 1px solid var(--border); }
-  .owl { width: 48px; height: 56px; color: #fff; }
+  .logo { height: 84px; }
   h1 { font-size: 18px; font-weight: 500; }
   .add { color: var(--ok); }
   .remove { color: var(--danger); }
