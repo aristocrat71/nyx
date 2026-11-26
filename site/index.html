@@ -90,8 +90,8 @@
   .index .on { color: var(--text); transform: scale(1.2); }
   .index .on::after { width: 40px; opacity: 1; }
   @media (max-width: 1280px) { .index { display: none; } }
-  footer { margin-top: 96px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
-  footer img { height: 15px; vertical-align: -2px; margin-left: 6px; }
+  footer { margin-top: 96px; padding-top: 48px; border-top: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 13px; }
+  footer img { width: 128px; display: block; }
 </style>
 </head>
 <body>
@@ -181,8 +181,8 @@
   </section>
 
   <footer>
-    <span class="muted">Made with care by Team<a href="https://unravel.tech"><img src="unravel.png" alt="Unravel"></a></span>
-    <a class="muted" href="https://github.com/aristocrat71/nyx-app">GitHub</a>
+    <span>Built by</span>
+    <a href="https://unravel.tech"><img src="unravel.png" alt="Unravel"></a>
   </footer>
 </main>
 <script>
