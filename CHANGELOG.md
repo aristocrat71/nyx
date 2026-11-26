@@ -9,6 +9,8 @@ All notable changes to Nyx are recorded here.
 - **Dashboard opens in front.** When macOS reopens Nyx, for example after you
   allow Screen Recording, the dashboard now comes up in front of your other
   windows instead of behind them.
+- **The right owl in the intro.** The intro's last page now shows the owl
+  exactly as it appears in your menu bar.
 
 ## [0.1.3] - 2026-11-26
 
