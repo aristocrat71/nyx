@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  let { hotkey, ondone }: { hotkey: string; ondone: () => void } = $props();
-  const last = 2;
+  let { hotkey, home, ondone }: { hotkey: string; home: string; ondone: () => void } = $props();
+  const last = 3;
   let page = $state(0);
   const go = (to: number) => (page = Math.max(0, Math.min(last, to)));
 
@@ -48,13 +48,19 @@
             <span class="muted">in any app</span>
           </div>
           <h1>Add the apps and sites<br />you want hidden.</h1>
-        {:else}
+        {:else if page === 2}
           <div class="sharing"><i></i>Sharing</div>
           <div class="pair">
             <figure>{@render win(false)}<figcaption>You</figcaption></figure>
             <figure>{@render win(true)}<figcaption>Viewers</figcaption></figure>
           </div>
           <h1>Nyx wakes up only when you start sharing your screen.</h1>
+        {:else}
+          <div class="menubar">
+            {#each [0, 1, 2] as _}<i></i>{/each}
+            <span class="here"><span class="owl"></span></span>
+          </div>
+          <h1>Nyx lives in your {home}.<br />Click the owl to come back here.</h1>
         {/if}
       </div>
     {/key}
@@ -63,7 +69,7 @@
   <nav>
     <button class="arrow" aria-label="Back" disabled={page === 0} onclick={() => go(page - 1)}>←</button>
     <div class="dots">
-      {#each [0, 1, 2] as i}<button class:on={i === page} aria-label="Page {i + 1}" onclick={() => go(i)}></button>{/each}
+      {#each { length: last + 1 }, i}<button class:on={i === page} aria-label="Page {i + 1}" onclick={() => go(i)}></button>{/each}
     </div>
     {#if page === last}
       <button class="pill ready" onclick={ondone}>I'm Ready</button>
@@ -112,6 +118,11 @@
 
   .keys { display: flex; align-items: center; gap: 5px; font-size: 11px; }
   kbd { font: inherit; font-size: 12px; font-weight: 500; min-width: 24px; padding: 3px 6px; text-align: center; border-radius: 5px; background: var(--control); border: 1px solid var(--border); border-bottom-width: 2px; }
+
+  .menubar { width: 220px; height: 26px; padding: 0 10px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; border-radius: 6px; background: var(--panel); border: 1px solid var(--border); }
+  .menubar i { width: 12px; height: 12px; border-radius: 3px; background: var(--control); }
+  .here { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; box-shadow: 0 0 0 2px var(--amber); }
+  .here .owl { width: 12px; height: 14px; }
 
   nav { width: 100%; display: flex; align-items: center; justify-content: space-between; height: 32px; }
   .arrow { width: 32px; height: 28px; font-size: 14px; border-radius: 6px; background: var(--control); border: 1px solid var(--border); }

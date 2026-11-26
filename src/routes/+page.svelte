@@ -44,6 +44,7 @@
     markSeen();
   };
   const refresh = async () => (snap = await api.snapshot());
+  const home = $derived(snap?.platform === "macos" ? "menu bar" : snap?.platform === "windows" ? "system tray" : "tray");
   const empty = $derived(snap !== null && snap.apps.length === 0 && snap.sites.length === 0);
 
   onMount(() => {
@@ -64,7 +65,7 @@
 </script>
 
 {#if snap && !introDone}
-  <Intro hotkey={snap.hotkey} ondone={finishIntro} />
+  <Intro hotkey={snap.hotkey} {home} ondone={finishIntro} />
 {:else if snap && version && seen !== version}
   <Updated {version} from={seen} ondone={markSeen} />
 {:else if snap && !(snap.screenPermission && snap.accessibilityPermission)}
