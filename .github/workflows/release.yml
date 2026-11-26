@@ -74,6 +74,8 @@ jobs:
     environment: release
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -117,3 +119,33 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+
+      # A <file>.sha256 beside each installer so a download can be checked before opening it.
+      - name: Publish SHA-256 checksums
+        id: sums
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PATHS: ${{ steps.tauri.outputs.artifactPaths }}
+        run: |
+          set -euo pipefail
+          sha() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1"; else shasum -a 256 "$1"; fi; }
+          echo 'paths<<EOF' >> "$GITHUB_OUTPUT"
+          n=0
+          while read -r f; do
+            f="${f%$'\r'}"
+            f="${f//\\//}"
+            case "$f" in *.dmg|*.AppImage|*.deb|*.rpm|*.exe|*.msi) ;; *) continue ;; esac
+            [ -f "$f" ] || { echo "::error::installer not found: $f"; exit 1; }
+            ( cd "$(dirname "$f")" && sha "$(basename "$f")" ) > "$f.sha256"
+            gh release upload "$GITHUB_REF_NAME" "$f.sha256" --clobber
+            echo "$f" >> "$GITHUB_OUTPUT"
+            n=$((n + 1))
+          done < <(jq -r '.[]' <<< "$PATHS")
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+          [ "$n" -gt 0 ] || { echo "::error::no installers found"; exit 1; }
+
+      # Verify a download with: gh attestation verify <file> --repo aristocrat71/nyx-app
+      - uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: ${{ steps.sums.outputs.paths }}
