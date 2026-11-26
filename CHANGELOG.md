@@ -24,6 +24,10 @@ place: same bundle id, same `protected.json`, same hotkey.
   hide a window from a capture or say when one runs, so you see the cover too.
   Wayland sessions are told plainly that Nyx cannot work there.
 
+- **One-line install for macOS,** which checks the download against its published
+  checksum before installing. Every release now carries a `.sha256` and a build
+  provenance attestation for each installer.
+
 ### Changed
 
 - **The dashboard's pickers draw inside the dashboard,** so they are kept out of

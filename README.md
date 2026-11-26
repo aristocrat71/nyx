@@ -35,6 +35,18 @@ On Linux you see the cover too, so protected apps are unusable while they are in
 
 ---
 
+## Install
+
+macOS, in one line. It verifies the download's checksum and skips the Gatekeeper prompt:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx-app/main/install.sh | bash
+```
+
+Or download [Nyx.dmg](https://github.com/aristocrat71/nyx-app/releases/latest/download/Nyx.dmg). Nyx is not notarized yet, so the first launch is blocked: click **Done**, then **System Settings › Privacy & Security › Open Anyway**. Windows and Linux builds are not released yet.
+
+---
+
 ## Use
 
 - Nyx lives in the **tray** (owl icon). The dashboard opens on first launch, or from the tray.
@@ -71,6 +83,21 @@ The certificate is not installed as a trusted root, but it still grants Screen R
 ```sh
 ./scripts/remove-dev-cert.sh
 ```
+
+</details>
+
+<details>
+<summary><b>Releasing</b></summary>
+
+<br>
+
+1. Write the changes under `## [Unreleased]` in `CHANGELOG.md` as you merge. That section becomes the release notes.
+2. On an up-to-date `main`, run `./scripts/release.sh 0.2.0`. It sets the version in `package.json`, `tauri.conf.json`, `Cargo.toml` and `Cargo.lock`, dates the changelog section, commits and tags `nyx-v0.2.0`.
+3. `git push origin main nyx-v0.2.0`. The `release` workflow refuses a tag that is off `main`, disagrees with the version files or has no changelog section, then builds and publishes the GitHub Release with a `.sha256` and a provenance attestation per installer.
+
+Only macOS is released for now, to save Actions minutes: add `ubuntu-22.04` and `windows-latest` to the `platform` list in `.github/workflows/release.yml` to ship those too. To try a branch on a real machine without releasing, run the `test-build` workflow by hand; it uploads unsigned installers for all three as run artifacts.
+
+One-time setup: under **Settings › Environments**, create `release`, add yourself as a required reviewer, and allow deployments from tags matching `nyx-v*` (a tag never satisfies "protected branches only").
 
 </details>
 
