@@ -12,7 +12,7 @@
   :root { --bg: #0e0f12; --panel: #16181d; --text: #e8e8e8; --muted: #8a8f98; --line: rgb(255 255 255 / 0.09); --control: rgb(255 255 255 / 0.07); --amber: #f5a623; }
   * { box-sizing: border-box; margin: 0; }
   body { background: var(--bg); color: var(--text); font: 400 15px/1.7 "JetBrains Mono", ui-monospace, monospace; }
-  main { max-width: 680px; margin: 0 auto; padding: 72px 24px 48px; }
+  main { zoom: 1.15; max-width: 680px; margin: 0 auto; padding: 72px 24px 48px; }
   a { color: inherit; }
   .muted { color: var(--muted); }
   .owl { filter: invert(1); }
@@ -93,18 +93,9 @@
   @media (max-width: 1280px) { .index { display: none; } }
   footer { margin-top: 96px; padding-top: 48px; border-top: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 13px; }
   footer img { width: 128px; display: block; }
-  .sizer { position: fixed; top: 16px; right: 20px; z-index: 5; display: flex; align-items: baseline; gap: 4px; }
-  .sizer button { font: inherit; color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; cursor: pointer; transition: color 0.2s, border-color 0.2s; }
-  .sizer button:hover { color: var(--text); }
-  .sizer .on { color: var(--text); border-color: rgb(255 255 255 / 0.35); }
 </style>
 </head>
 <body>
-<div class="sizer" role="group" aria-label="Text size">
-  <button data-zoom="0.9" style="font-size: 11px" aria-label="Smaller text">A−</button>
-  <button data-zoom="1" style="font-size: 13px" aria-label="Normal text">A</button>
-  <button data-zoom="1.15" style="font-size: 15px" aria-label="Larger text">A+</button>
-</div>
 <nav class="index">
   <a href="#how">HOW IT WORKS</a>
   <a href="#why">WHY WE MADE IT</a>
@@ -216,17 +207,6 @@
   go(0);
   addEventListener("resize", () => go(step));
 
-  const sizes = [...document.querySelectorAll(".sizer button")];
-  // Only the three offered sizes: the how-it-works animation is laid out for 90% to 115%.
-  const size = (z) => {
-    if (!sizes.some((b) => b.dataset.zoom === z)) z = "1.15";
-    document.querySelector("main").style.zoom = z;
-    sizes.forEach((b) => b.classList.toggle("on", b.dataset.zoom === z));
-    localStorage.setItem("nyx.zoom", z);
-    go(step);
-  };
-  sizes.forEach((b) => b.addEventListener("click", () => size(b.dataset.zoom)));
-  size(localStorage.getItem("nyx.zoom") ?? "1.15");
   play();
 
   const tabs = [...document.querySelectorAll(".tabs button")];
