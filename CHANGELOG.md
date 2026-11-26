@@ -2,6 +2,14 @@
 
 All notable changes to Nyx are recorded here.
 
+## [Unreleased]
+
+### Fixed
+
+- **Nyx shows up in Screen Recording.** Open Settings now waits a moment after
+  asking for access before opening System Settings, so Nyx is in the list
+  instead of missing until you add it by hand.
+
 ## [0.1.4] - 2026-11-26
 
 ### Fixed
