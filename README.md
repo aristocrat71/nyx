@@ -59,18 +59,6 @@ macOS asks for **Screen Recording** on first launch, and site rules need **Acces
 
 ---
 
-## Releasing
-
-1. Write the changes under `## [Unreleased]` in `CHANGELOG.md` as you merge. That section becomes the release notes.
-2. In a pull request, set the version in `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `src-tauri/Cargo.lock`, and turn `## [Unreleased]` into `## [0.1.1] - YYYY-MM-DD`. Merge it.
-3. Tag `main` and push the tag: `git pull origin main && git tag nyx-v0.1.1 && git push origin nyx-v0.1.1`. The `release` workflow refuses a tag that is off `main`, disagrees with the version files or has no changelog section, then builds and publishes the GitHub Release with a `.sha256` and a provenance attestation per installer.
-
-Only macOS is released for now, to save Actions minutes: add `ubuntu-22.04` and `windows-latest` to the `platform` list in `.github/workflows/release.yml` to ship those too. To try a branch on a real machine without releasing, run the `test-build` workflow by hand; it uploads unsigned installers for all three as run artifacts.
-
-One-time setup: under **Settings › Environments**, create `release`, add yourself as a required reviewer, and allow deployments from tags matching `nyx-v*` (a tag never satisfies "protected branches only").
-
----
-
 <div align="center">
 
 <sub>Built by</sub><br>
