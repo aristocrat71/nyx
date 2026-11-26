@@ -92,8 +92,8 @@ The certificate is not installed as a trusted root, but it still grants Screen R
 <br>
 
 1. Write the changes under `## [Unreleased]` in `CHANGELOG.md` as you merge. That section becomes the release notes.
-2. On an up-to-date `main`, run `./scripts/release.sh 0.2.0`. It sets the version in `package.json`, `tauri.conf.json`, `Cargo.toml` and `Cargo.lock`, dates the changelog section, commits and tags `nyx-v0.2.0`.
-3. `git push origin main nyx-v0.2.0`. The `release` workflow refuses a tag that is off `main`, disagrees with the version files or has no changelog section, then builds and publishes the GitHub Release with a `.sha256` and a provenance attestation per installer.
+2. On an up-to-date `main`, run `./scripts/release.sh 0.1.1`. It sets the version in `package.json`, `tauri.conf.json`, `Cargo.toml` and `Cargo.lock`, dates the changelog section, commits and tags `nyx-v0.1.1`.
+3. `git push origin main nyx-v0.1.1`. The `release` workflow refuses a tag that is off `main`, disagrees with the version files or has no changelog section, then builds and publishes the GitHub Release with a `.sha256` and a provenance attestation per installer.
 
 Only macOS is released for now, to save Actions minutes: add `ubuntu-22.04` and `windows-latest` to the `platform` list in `.github/workflows/release.yml` to ship those too. To try a branch on a real machine without releasing, run the `test-build` workflow by hand; it uploads unsigned installers for all three as run artifacts.
 
