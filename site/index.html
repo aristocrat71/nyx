@@ -219,14 +219,14 @@
   const sizes = [...document.querySelectorAll(".sizer button")];
   // Only the three offered sizes: the how-it-works animation is laid out for 90% to 115%.
   const size = (z) => {
-    if (!sizes.some((b) => b.dataset.zoom === z)) z = "1";
+    if (!sizes.some((b) => b.dataset.zoom === z)) z = "1.15";
     document.querySelector("main").style.zoom = z;
     sizes.forEach((b) => b.classList.toggle("on", b.dataset.zoom === z));
     localStorage.setItem("nyx.zoom", z);
     go(step);
   };
   sizes.forEach((b) => b.addEventListener("click", () => size(b.dataset.zoom)));
-  size(localStorage.getItem("nyx.zoom") ?? "1");
+  size(localStorage.getItem("nyx.zoom") ?? "1.15");
   play();
 
   const tabs = [...document.querySelectorAll(".tabs button")];
