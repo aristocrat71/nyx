@@ -3,6 +3,8 @@ mod engine;
 mod site;
 mod store;
 mod tray;
+#[cfg(target_os = "macos")]
+mod update;
 
 #[cfg(target_os = "macos")]
 #[path = "platform/macos/mod.rs"]
@@ -60,6 +62,31 @@ fn show_dashboard(app: &AppHandle) {
     });
 }
 
+#[cfg(target_os = "macos")]
+fn spawn_updater(app: AppHandle) {
+    use std::time::Duration;
+    let idle = || {
+        let (tx, rx) = std::sync::mpsc::channel();
+        engine::post(move |nyx| {
+            let _ = tx.send(nyx.state == State::Idle);
+        });
+        rx.recv().unwrap_or(false)
+    };
+    std::thread::spawn(move || loop {
+        std::thread::sleep(Duration::from_secs(10));
+        if let Some(dmg) = update::download(&app.package_info().version.to_string()) {
+            // Restarting drops any cover, so wait until nothing is covered.
+            while !idle() {
+                std::thread::sleep(Duration::from_secs(30));
+            }
+            if update::install(&dmg).is_some() {
+                app.restart();
+            }
+        }
+        std::thread::sleep(Duration::from_secs(6 * 60 * 60));
+    });
+}
+
 #[cfg_attr(target_os = "linux", allow(dead_code))]
 fn permission_lost() {
     log::error!("screen recording permission lost");
@@ -104,6 +131,10 @@ pub fn run() {
             let granted = platform::has_screen_permission() && platform::has_accessibility_permission();
             let needs_user = !granted || list.load_failed || list.apps.is_empty();
             engine::start(app.handle().clone(), list);
+            #[cfg(target_os = "macos")]
+            if !cfg!(debug_assertions) {
+                spawn_updater(app.handle().clone());
+            }
             if needs_user {
                 show_dashboard(app.handle());
             }
