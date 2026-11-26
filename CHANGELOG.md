@@ -10,6 +10,14 @@ the tag being built and uses it as the GitHub release body, so it is what anyone
 downloading Nyx reads. A tag with no matching section here fails the release
 before anything is built. Write the entry as you merge, not at tag time.
 
+## [Unreleased]
+
+### Added
+
+- **Automatic updates.** Nyx checks for a new release shortly after launch and
+  every six hours, verifies the download's checksum, and installs it the next
+  time nothing is covered, then reopens itself.
+
 ## [0.1.0] - 2026-11-26
 
 First release. Nyx sits in the menu bar and blacks out the apps and sites you
