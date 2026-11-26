@@ -58,7 +58,7 @@
         {:else}
           <div class="menubar">
             {#each [0, 1, 2] as _}<i></i>{/each}
-            <span class="here"><span class="owl"></span></span>
+            <span class="here"><span class="tray"></span></span>
           </div>
           <h1>Nyx lives in your {home}.<br />Click the owl to come back here.</h1>
         {/if}
@@ -122,7 +122,7 @@
   .menubar { width: 220px; height: 26px; padding: 0 10px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; border-radius: 6px; background: var(--panel); border: 1px solid var(--border); }
   .menubar i { width: 12px; height: 12px; border-radius: 3px; background: var(--control); }
   .here { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; box-shadow: 0 0 0 2px var(--amber); }
-  .here .owl { width: 12px; height: 14px; }
+  .tray { width: 16px; height: 16px; background: currentColor; mask: url("/tray-owl.png") center / contain no-repeat; }
 
   nav { width: 100%; display: flex; align-items: center; justify-content: space-between; height: 32px; }
   .arrow { width: 32px; height: 28px; font-size: 14px; border-radius: 6px; background: var(--control); border: 1px solid var(--border); }
