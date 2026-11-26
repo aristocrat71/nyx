@@ -8,8 +8,8 @@ All notable changes to Nyx are recorded here.
 
 - **Permissions after an update.** System Settings could show Nyx as allowed
   while Nyx still asked for Screen Recording or Accessibility, because the entry
-  belonged to the previous version. Nyx now clears such entries when it starts,
-  so allowing it once more takes effect.
+  belonged to the previous version. The first time Nyx starts after an update it
+  clears such entries, so allowing it once more takes effect.
 
 ## [0.1.1] - 2026-11-26
 
