@@ -2,13 +2,27 @@
 
 All notable changes to Nyx are recorded here.
 
-## [Unreleased]
+## [0.1.1] - 2026-11-26
+
+From this version on, Nyx updates itself. Coming from 0.1.0, install this one by
+hand once, and every later release arrives on its own.
 
 ### Added
 
 - **Automatic updates.** Nyx checks for a new release shortly after launch and
   every six hours, verifies the download's checksum, and installs it the next
   time nothing is covered, then reopens itself.
+- **What's new after an update.** After Nyx updates, the dashboard lists what
+  changed, with a link to the full release notes.
+
+### Changed
+
+- **A calmer empty dashboard.** With nothing protected, the dashboard shows just
+  the owl and the two add buttons.
+- **Add buttons above the lists.** Add app and Add website sit right under their
+  heading, so they stay in reach however long the lists grow.
+- **Pickers open beside their button.** The app picker and the website field open
+  next to the button you clicked, instead of at the top of the window.
 
 ## [0.1.0] - 2026-11-26
 
