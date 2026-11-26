@@ -82,11 +82,25 @@
   .cmd + p, .door + p, .get + p { margin-top: 14px; }
   [data-panel] .get { display: block; width: fit-content; margin-top: 14px; }
   @media (max-width: 600px) { .door { flex-direction: column; align-items: stretch; } }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+  .index { position: fixed; top: 50%; left: max(20px, calc(50% - 580px)); transform: translateY(-50%); display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+  .index a { display: flex; align-items: center; gap: 10px; font-size: 11px; letter-spacing: 0.08em; color: var(--muted); text-decoration: none; transform-origin: left center; transition: color 0.5s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+  .index a::after { content: ""; width: 18px; border-top: 1px solid currentColor; opacity: 0.6; transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+  .index a:hover { color: var(--text); }
+  .index .on { color: var(--text); transform: scale(1.2); }
+  .index .on::after { width: 40px; opacity: 1; }
+  @media (max-width: 1200px) { .index { display: none; } }
   footer { margin-top: 96px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
   footer img { height: 15px; vertical-align: -2px; margin-left: 6px; }
 </style>
 </head>
 <body>
+<nav class="index">
+  <a href="#how">HOW IT WORKS</a>
+  <a href="#why">WHY WE MADE IT</a>
+  <a href="#short">THE SHORT VERSION</a>
+  <a href="#install">INSTALL</a>
+</nav>
 <main>
   <header>
     <div class="tile"><img class="owl" src="owl.png" alt=""></div>
@@ -95,7 +109,7 @@
     <a class="get" href="#install">Install Now</a>
   </header>
 
-  <section>
+  <section id="how">
     <h2>HOW IT WORKS</h2>
     <div class="show" data-step="0">
       <div class="screens">
@@ -125,13 +139,13 @@
     </div>
   </section>
 
-  <section>
+  <section id="why">
     <h2>WHY WE MADE IT</h2>
     <p>Every time we wanted to share our screen in a call, we kept doing the same thing manually: minimize unwanted windows, close some tabs we don't want to be seen. Or if we are sharing a single window and wanted to show something else, manually switch and keep asking people to confirm.</p>
     <p>Ugh, all this was too tiring. So we built the thing we wanted. Tell Nyx which apps and sites are private once, and forget about it. When you share your screen, those windows turn black for everyone watching while you still see them and use them normally.</p>
   </section>
 
-  <section>
+  <section id="short">
     <h2>THE SHORT VERSION</h2>
     <ul>
       <li>Works with Zoom, Meet, Teams, Slack huddles, anything that shares your screen.</li>
@@ -198,6 +212,15 @@
   };
   tabs.forEach((b) => b.addEventListener("click", () => pick(b.dataset.os)));
   pick(/Win/.test(navigator.platform) ? "win" : /Linux/.test(navigator.platform) ? "linux" : "mac");
+  const marks = [...document.querySelectorAll(".index a")];
+  const parts = marks.map((a) => document.querySelector(a.getAttribute("href")));
+  const mark = () => {
+    const bottom = innerHeight + scrollY >= document.documentElement.scrollHeight - 2;
+    const i = bottom ? parts.length - 1 : parts.findLastIndex((p) => p.getBoundingClientRect().top <= innerHeight * 0.4);
+    marks.forEach((a, j) => a.classList.toggle("on", j === Math.max(i, 0)));
+  };
+  addEventListener("scroll", () => requestAnimationFrame(mark), { passive: true });
+  mark();
   const copy = document.querySelector(".cmd button");
   copy.addEventListener("click", () => navigator.clipboard.writeText(copy.previousElementSibling.textContent).then(() => (copy.textContent = "copied")));
 </script>
