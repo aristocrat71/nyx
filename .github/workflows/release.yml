@@ -134,6 +134,11 @@ jobs:
             echo "$f" >> "$GITHUB_OUTPUT"
             n=$((n + 1))
           done < <(jq -r '.[]' <<< "$PATHS")
+          # A fixed name too, so releases/latest/download/Nyx.dmg always works.
+          for f in $(grep '\.dmg$' "$GITHUB_OUTPUT" || true); do
+            cp "$f" Nyx.dmg && sha Nyx.dmg > Nyx.dmg.sha256
+            gh release upload "$GITHUB_REF_NAME" Nyx.dmg Nyx.dmg.sha256 --clobber
+          done
           echo 'EOF' >> "$GITHUB_OUTPUT"
           [ "$n" -gt 0 ] || { echo "::error::no installers found"; exit 1; }
 
