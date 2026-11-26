@@ -2,6 +2,14 @@
 
 All notable changes to Nyx are recorded here.
 
+## [0.1.6] - 2026-11-26
+
+### Changed
+
+- **The new logo everywhere.** The dashboard, the intro, the permissions and
+  update screens, and the cover over protected apps now show Nyx's rounded
+  black-on-white logo.
+
 ## [0.1.5] - 2026-11-26
 
 ### Fixed
