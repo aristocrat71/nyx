@@ -15,10 +15,25 @@ fi
 say() { printf '%s==>%s %s\n' "$green" "$off" "$1"; }
 die() { printf '%serror:%s %s\n' "$red" "$off" "$1" >&2; exit 1; }
 
-owl=('          ' '   ,___,  ' '   (O,O)  ' '   /)__)  ' '  --"-"-- ' '          ')
 name=(' _   _' '| \ | |_   ___  __' '|  \| | | | \ \/ /' '| |\  | |_| |>  <' '|_| \_|\__, /_/\_\' '       |___/')
 echo
-for i in "${!owl[@]}"; do printf '  %s%s%s  %s%s%s\n' "$amber" "${owl[$i]}" "$off" "$bold" "${name[$i]}" "$off"; done
+i=0
+while IFS= read -r line; do
+  n=''; [ "$i" -ge 2 ] && n="${name[$((i - 2))]:-}"
+  printf '  %s%-14s%s   %s%s%s\n' "$amber" "$line" "$off" "$bold" "$n" "$off"
+  i=$((i + 1))
+done <<'OWL'
+ /\         /\
+ \ '-.___.-' /
+ | .-.   .-. |
+ |( @ )v( @ )|
+ | '-'   '-' |
+ |\   \ /   /|
+ | \   X   / |
+ |  \ / \ /  |
+  \__V   V__/
+    /_\ /_\
+OWL
 printf '\n  %sShare your screen, not everything on it.%s\n\n' "$dim" "$off"
 
 case "$(uname -s)" in
