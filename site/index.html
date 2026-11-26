@@ -62,7 +62,7 @@
   .steps .on button { color: var(--text); }
   .steps span { display: inline-block; width: 2.2em; }
   @media (max-width: 600px) { .screens { flex-direction: column; } .link { display: none; } }
-  .latest { margin: -8px 0 18px; }
+  .latest { margin-top: -14px; }
   .tabs { display: flex; gap: 18px; margin-bottom: 18px; }
   .tabs button { font: inherit; color: var(--muted); background: none; border: 0; padding: 0 0 4px; border-bottom: 1.5px solid transparent; cursor: pointer; }
   .tabs .on { color: var(--text); border-color: var(--text); }
@@ -106,6 +106,7 @@
   <header>
     <div class="tile"><img class="owl" src="owl.png" alt=""></div>
     <h1>Nyx</h1>
+    <p class="muted small latest" hidden><a></a> · <span></span></p>
     <p class="lede">Share your screen, not everything on it.</p>
     <a class="get" href="#install">Install Now</a>
   </header>
@@ -160,7 +161,6 @@
 
   <section id="install">
     <h2>INSTALL</h2>
-    <p class="muted small latest" hidden>Latest version <a></a>, released <span></span></p>
     <div class="tabs"><button data-os="mac">macOS</button><button data-os="win">Windows</button><button data-os="linux">Linux</button></div>
     <div data-panel="mac">
       <p>CLI method: Paste this command on your terminal</p>
@@ -228,7 +228,7 @@
     .then((r) => (r.ok ? r.json() : Promise.reject()))
     .then((rel) => {
       const latest = document.querySelector(".latest");
-      latest.querySelector("a").textContent = rel.tag_name.replace("nyx-v", "");
+      latest.querySelector("a").textContent = rel.tag_name.replace("nyx-", "");
       latest.querySelector("a").href = rel.html_url;
       latest.querySelector("span").textContent = new Date(rel.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
       latest.hidden = false;
