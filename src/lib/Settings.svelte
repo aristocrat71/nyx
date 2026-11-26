@@ -24,7 +24,7 @@
 </div>
 
 <style>
-  .settings { width: 310px; top: 34px; right: 12px; }
+  .settings { width: 310px; bottom: 44px; right: 12px; }
   .head { font-size: 10px; padding: 14px 14px 12px; }
   .line { display: flex; justify-content: space-between; align-items: center; padding: 0 14px 14px; }
   .segments { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--control); }

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nyx · share your screen, not everything on it</title>
+<meta name="description" content="Nyx covers the apps you choose with a black placeholder whenever your screen is being shared. You keep using them; nobody else sees them.">
+<link rel="icon" href="owl.png">
+<style>
+  @font-face { font-family: "JetBrains Mono"; src: url("JetBrainsMono-Regular.woff2") format("woff2"); font-weight: 400; }
+  @font-face { font-family: "JetBrains Mono"; src: url("JetBrainsMono-Medium.woff2") format("woff2"); font-weight: 500; }
+  :root { --bg: #0e0f12; --panel: #16181d; --text: #e8e8e8; --muted: #8a8f98; --line: rgb(255 255 255 / 0.09); --control: rgb(255 255 255 / 0.07); --amber: #f5a623; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 400 15px/1.7 "JetBrains Mono", ui-monospace, monospace; }
+  main { max-width: 680px; margin: 0 auto; padding: 72px 24px 48px; }
+  a { color: inherit; }
+  .muted { color: var(--muted); }
+  .owl { filter: invert(1); }
+  header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
+  .tile { width: 88px; height: 88px; border-radius: 20px; background: #000; border: 1px solid rgb(255 255 255 / 0.18); display: grid; place-items: center; }
+  .tile .owl { width: 50px; }
+  h1 { font-size: 34px; font-weight: 500; }
+  .lede { font-size: 17px; }
+  .get { display: inline-block; margin-top: 8px; padding: 10px 18px; border-radius: 8px; background: var(--text); color: var(--bg); font-weight: 500; text-decoration: none; }
+  .small { font-size: 12px; }
+  section { margin-top: 88px; }
+  h2 { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 18px; }
+  p + p { margin-top: 14px; }
+  ul { padding-left: 1.2em; }
+  li + li { margin-top: 8px; }
+  kbd { font: inherit; font-size: 12px; padding: 2px 7px; border-radius: 5px; background: var(--control); border: 1px solid var(--line); }
+  .show { position: relative; margin-top: 8px; }
+  .link { position: absolute; left: -30px; top: 150px; width: 20px; border: 1.5px solid rgb(255 255 255 / 0.55); border-right: 0; border-radius: 8px 0 0 8px; transition: height 0.4s ease; }
+  .link::before { content: ""; position: absolute; left: 100%; top: -1.5px; width: var(--reach, 0px); border-top: inherit; transition: width 0.4s ease; }
+  .screens { display: flex; justify-content: center; gap: 20px; }
+  figure { flex: 0 0 calc(50% - 10px); display: flex; flex-direction: column; gap: 10px; }
+  [data-step="0"] .them { display: none; }
+  figcaption { font-size: 12px; color: var(--muted); text-align: center; }
+  .screen { position: relative; height: 200px; border-radius: 10px; border: 1px solid var(--line); background: #1d2026; overflow: hidden; }
+  .win { position: absolute; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; font-size: 10px; line-height: 1.5; }
+  .notes { left: 6%; top: 14%; width: 50%; height: 64%; }
+  .chat { right: 6%; top: 18%; width: 52%; height: 76%; transition: border-color 0.3s; }
+  [data-step="0"] .you .chat { border-color: var(--amber); }
+  .bar { display: flex; align-items: center; gap: 4px; padding: 5px 7px; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .bar i { width: 5px; height: 5px; border-radius: 50%; background: var(--control); }
+  .bar span { margin-left: 4px; flex: 1; }
+  .lines { padding: 10px; display: flex; flex-direction: column; gap: 7px; }
+  .lines b { height: 5px; border-radius: 3px; background: var(--control); }
+  .msgs { padding: 8px; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+  .msgs p { padding: 2px 7px; border-radius: 7px; background: var(--control); }
+  .msgs .me { align-self: flex-end; background: rgb(245 166 35 / 0.18); }
+  .msgs .new { opacity: 0; transition: opacity 0.4s; }
+  .cover { position: absolute; inset: 0; background: #000; display: grid; place-items: center; opacity: 0; transition: opacity 0.35s; }
+  .cover .owl { width: 20px; opacity: 0.5; }
+  .pill { position: absolute; left: 8px; bottom: 8px; font-size: 10px; padding: 2px 8px; border-radius: 99px; background: rgb(245 166 35 / 0.15); color: var(--amber); opacity: 0; transition: opacity 0.3s; }
+  .off { position: absolute; inset: 0; background: #0b0c0e; display: grid; place-items: center; font-size: 11px; color: var(--muted); transition: opacity 0.35s; }
+  .them .pill { display: none; }
+  .live .them .cover, .live .you .pill, [data-step="2"] .new { opacity: 1; }
+  .live .off { opacity: 0; }
+  .steps { list-style: none; padding: 0; margin-top: 28px; display: flex; flex-direction: column; gap: 4px; }
+  .steps button { font: inherit; color: var(--muted); background: none; border: 0; padding: 4px 0; text-align: left; cursor: pointer; transition: color 0.3s; }
+  .steps .on button { color: var(--text); }
+  .steps span { display: inline-block; width: 2.2em; }
+  @media (max-width: 600px) { .screens { flex-direction: column; } .link { display: none; } }
+  footer { margin-top: 96px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+  footer img { height: 15px; vertical-align: -2px; margin-left: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="tile"><img class="owl" src="owl.png" alt=""></div>
+    <h1>Nyx</h1>
+    <p class="lede">Share your screen, not everything on it.</p>
+    <a class="get" href="https://github.com/aristocrat71/nyx-app/releases/latest">Download for Mac</a>
+    <p class="muted small">Windows and Linux are on the way.</p>
+  </header>
+
+  <section>
+    <h2>HOW IT WORKS</h2>
+    <div class="show" data-step="0">
+      <div class="screens">
+        <figure class="you">
+          <div class="screen">
+            <div class="win notes"><div class="bar"><i></i><i></i><i></i><span>Slides</span></div><div class="lines"><b style="width:80%"></b><b style="width:95%"></b><b style="width:60%"></b><b style="width:85%"></b></div></div>
+            <div class="win chat">
+              <div class="bar"><i></i><i></i><i></i><span>Sibling 😒</span></div>
+              <div class="msgs"><p>i ate your leftovers</p><p class="me">you WHAT</p><p class="new">they were mid tbh</p></div>
+              <div class="cover"><img class="owl" src="owl.png" alt=""></div>
+            </div>
+            <div class="pill">● Sharing</div>
+          </div>
+          <figcaption>Your screen</figcaption>
+        </figure>
+        <figure class="them">
+          <div class="screen"><div class="off">Not sharing</div></div>
+          <figcaption>What everyone else sees</figcaption>
+        </figure>
+      </div>
+      <div class="link"></div>
+      <ol class="steps">
+        <li><button><span>01</span>Tell Nyx what's private. For eg. WhatsApp</button></li>
+        <li><button><span>02</span>Share your screen the way you always do.</button></li>
+        <li><button><span>03</span>Keep texting. They see a black box, you see everything.</button></li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>WHY WE MADE IT</h2>
+    <p>Every time we wanted to share our screen in a call, we kept doing the same thing manually: minimize unwanted windows, close some tabs we don't want to be seen. Or if we are sharing a single window and wanted to show something else, manually switch and keep asking people to confirm.</p>
+    <p>Ugh, all this was too tiring. So we built the thing we wanted. Tell Nyx which apps and sites are private once, and forget about it. When you share your screen, those windows turn black for everyone watching while you still see them and use them normally.</p>
+  </section>
+
+  <section>
+    <h2>THE SHORT VERSION</h2>
+    <ul>
+      <li>Works with Zoom, Meet, Teams, Slack huddles, anything that shares your screen.</li>
+      <li>Add an app from the menu bar, or press <kbd>⌃</kbd> <kbd>⇧</kbd> <kbd>L</kbd> while you're in it.</li>
+      <li>Websites too: list <code>youtube.com</code> and only that tab gets covered.</li>
+      <li>Asleep until you share. Nothing is recorded, nothing is uploaded.</li>
+      <li>If something goes wrong, Nyx keeps the cover up rather than risk a peek.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span class="muted">Made with care by Team<a href="https://unravel.tech"><img src="unravel.png" alt="Unravel"></a></span>
+    <a class="muted" href="https://github.com/aristocrat71/nyx-app">GitHub</a>
+  </footer>
+</main>
+<script>
+  const show = document.querySelector(".show");
+  const steps = [...show.querySelectorAll(".steps li")];
+  const link = show.querySelector(".link");
+  show.querySelector(".them .screen").prepend(...[...show.querySelector(".you .screen").children].map((n) => n.cloneNode(true)));
+  let step = 0, timer;
+  const go = (n) => {
+    step = n % steps.length;
+    show.dataset.step = step;
+    show.classList.toggle("live", step === 1 || step === 2);
+    steps.forEach((li, i) => li.classList.toggle("on", i === step));
+    link.style.setProperty("--reach", show.querySelector(".you").offsetLeft + "px");
+    link.style.height = steps[step].offsetTop + steps[step].offsetHeight / 2 - link.offsetTop + "px";
+  };
+  const play = () => matchMedia("(prefers-reduced-motion: reduce)").matches || (timer = setInterval(() => go(step + 1), 4200));
+  steps.forEach((li, i) => li.querySelector("button").addEventListener("click", () => { clearInterval(timer); go(i); play(); }));
+  go(0);
+  addEventListener("resize", () => go(step));
+  play();
+</script>
+</body>
+</html>

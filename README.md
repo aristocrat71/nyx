@@ -82,6 +82,7 @@ The certificate is not installed as a trusted root, but it still grants Screen R
 - `src/` — the dashboard, in Svelte.
 - `src-tauri/src/` — the platform-neutral core: site rules (`site.rs`), the protected list (`store.rs`), the engine that decides when to cover (`engine.rs`), the tray and the dashboard's commands.
 - `src-tauri/src/platform/{macos,windows,linux}/` — everything that touches other apps' windows, the same functions on each OS.
+- `site/` — the website: one static page, deploy the folder as is. The app build never touches it.
 
 </details>
 

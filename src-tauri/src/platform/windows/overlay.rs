@@ -128,7 +128,7 @@ fn placeholder_window() -> HWND {
     hwnd
 }
 
-/// The caption PNG is @2x for 522x95 points; composited onto black once, so painting is one blit.
+/// The caption PNG is @2x for 522x169 points; composited onto black once, so painting is one blit.
 fn caption() -> &'static (Vec<u8>, i32, i32) {
     static CAPTION: OnceLock<(Vec<u8>, i32, i32)> = OnceLock::new();
     CAPTION.get_or_init(|| {
@@ -152,7 +152,7 @@ unsafe extern "system" fn placeholder_proc(hwnd: HWND, msg: u32, wparam: WPARAM,
             unsafe { FillRect(dc, &client, HBRUSH(GetStockObject(BLACK_BRUSH).0)) };
             let (pixels, w, h) = caption();
             let scale = unsafe { GetDpiForWindow(hwnd) } as i32;
-            let (dw, dh) = (522 * scale / 96, 95 * scale / 96);
+            let (dw, dh) = (522 * scale / 96, 169 * scale / 96);
             let (cw, ch) = (client.right, client.bottom);
             if cw >= dw + 48 * scale / 96 && ch >= dh + 96 * scale / 96 {
                 let mut info = BITMAPINFO::default();

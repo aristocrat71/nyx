@@ -48,16 +48,7 @@
 {:else if snap && !(snap.screenPermission && snap.accessibilityPermission)}
   <Permissions {snap} />
 {:else if snap}
-  <div class="top" data-tauri-drag-region>
-    <button class="gear" title="Settings" aria-label="Settings" onclick={() => (open = "settings")}>
-      <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-        {#each [0, 45, 90, 135, 180, 225, 270, 315] as turn}
-          <rect x="10" y="1.5" width="4" height="5" rx="1" transform="rotate({turn} 12 12)" />
-        {/each}
-        <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="3" />
-      </svg>
-    </button>
-  </div>
+  <div class="top" data-tauri-drag-region></div>
   <header data-tauri-drag-region>
     <div class="tile"><div class="owl"></div></div>
     <div class="title" data-tauri-drag-region>
@@ -127,13 +118,21 @@
     <div class="hint">
       <span class="chip">{snap.hotkey}</span>
       <span class="muted small">Protect the app you're using, or unprotect it.</span>
+      <button class="gear" title="Settings" aria-label="Settings" onclick={() => (open = "settings")}>
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+          {#each [0, 45, 90, 135, 180, 225, 270, 315] as turn}
+            <rect x="10" y="1.5" width="4" height="5" rx="1" transform="rotate({turn} 12 12)" />
+          {/each}
+          <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="3" />
+        </svg>
+      </button>
     </div>
   </footer>
 {/if}
 
 <style>
   :global(body) { display: flex; flex-direction: column; }
-  .top { height: 30px; flex: none; display: flex; justify-content: flex-end; align-items: center; padding-right: 12px; }
+  .top { height: 30px; flex: none; }
   header { display: flex; align-items: center; gap: 12px; padding: 0 16px 18px; }
   .tile { width: 46px; height: 46px; border-radius: 11px; background: var(--control); border: 1px solid var(--border); display: grid; place-items: center; }
   .tile .owl { width: 28px; height: 28px; }
@@ -150,7 +149,7 @@
   .row { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 16px; font-size: 13px; }
   .row.site { height: 32px; }
   .row:hover { background: var(--row); }
-  .gear { width: 26px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--muted); background: var(--control); border: 1px solid var(--border); }
+  .gear { margin-left: auto; flex: none; width: 26px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--muted); background: var(--control); border: 1px solid var(--border); }
   .banner { display: flex; align-items: center; gap: 10px; padding: 12px; font-size: 11px; color: var(--amber-text); background: color-mix(in srgb, var(--amber) 12%, transparent); }
   .banner.failed { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); line-height: 1.5; }
   .add { margin: 8px 16px 0; }
