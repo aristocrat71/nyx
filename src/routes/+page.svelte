@@ -72,9 +72,8 @@
     {#if empty}
       <div class="empty">
         <div class="owl big"></div>
-        <p class="muted">Nothing protected yet.<br />Add an app, or press {snap.hotkey} while using one.</p>
+        <p class="muted">Nothing protected</p>
         <button class="pill" onclick={() => (open = "app")}>+ Add app…</button>
-        <p class="muted small">Or cover a site whenever it is your front tab.</p>
         <button class="pill" onclick={() => (open = "site")}>+ Add website…</button>
       </div>
     {:else}
