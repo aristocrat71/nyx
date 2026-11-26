@@ -142,10 +142,12 @@ pub fn run() {
         })
         .build(tauri::generate_context!())
         .expect("error while building Nyx")
-        .run(|_, event| {
+        .run(|_app, event| match event {
             // Closing the dashboard must not quit Nyx; only Quit, which passes an exit code, does.
-            if let RunEvent::ExitRequested { code: None, api, .. } = event {
-                api.prevent_exit();
-            }
+            RunEvent::ExitRequested { code: None, api, .. } => api.prevent_exit(),
+            // Opening Nyx again from Spotlight or Finder is the way in when the menu bar hides the owl.
+            #[cfg(target_os = "macos")]
+            RunEvent::Reopen { .. } => show_dashboard(_app),
+            _ => {}
         });
 }
