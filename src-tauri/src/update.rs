@@ -1,4 +1,4 @@
-//! Updates the installed Nyx.app from the Nyx.dmg and Nyx.dmg.sha256 every release publishes,
+//! Updates the installed Nyx.app from the Nyx-update.dmg and its .sha256 every release publishes,
 //! checked the same way install.sh checks them.
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -35,7 +35,7 @@ pub fn download(current: &str) -> Option<PathBuf> {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).ok()?;
     let dmg = dir.join("Nyx.dmg");
-    let source = format!("{RELEASES}/download/nyx-v{version}/Nyx.dmg");
+    let source = format!("{RELEASES}/download/nyx-v{version}/Nyx-update.dmg");
     run("/usr/bin/curl", &["-fsSL", "-o", dmg.to_str()?, &source])?;
     let expected = run("/usr/bin/curl", &["-fsSL", &format!("{source}.sha256")])?;
     let actual = run("/usr/bin/shasum", &["-a", "256", dmg.to_str()?])?;
