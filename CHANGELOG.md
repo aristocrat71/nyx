@@ -2,6 +2,15 @@
 
 All notable changes to Nyx are recorded here.
 
+## [Unreleased]
+
+### Fixed
+
+- **Permissions after an update.** System Settings could show Nyx as allowed
+  while Nyx still asked for Screen Recording or Accessibility, because the entry
+  belonged to the previous version. The first time Nyx starts after an update it
+  clears such entries, so allowing it once more takes effect.
+
 ## [0.1.1] - 2026-11-26
 
 From this version on, Nyx updates itself. Coming from 0.1.0, install this one by

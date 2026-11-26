@@ -68,9 +68,28 @@ pub fn install(dmg: &Path) -> Option<()> {
     Some(())
 }
 
+/// True on the first launch of a version other than the last one launched, so once per update.
+pub fn first_launch_after_update(dir: &Path, version: &str) -> bool {
+    let file = dir.join("last-version");
+    let last = std::fs::read_to_string(&file).ok();
+    let _ = std::fs::create_dir_all(dir).and_then(|_| std::fs::write(&file, version));
+    last.is_some_and(|v| v.trim() != version)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::parse;
+    use super::{first_launch_after_update, parse};
+
+    #[test]
+    fn only_a_new_version_counts_as_an_update() {
+        let dir = std::env::temp_dir().join(format!("nyx-update-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(!first_launch_after_update(&dir, "0.1.1"));
+        assert!(!first_launch_after_update(&dir, "0.1.1"));
+        assert!(first_launch_after_update(&dir, "0.1.2"));
+        assert!(!first_launch_after_update(&dir, "0.1.2"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn versions_compare_numerically() {
