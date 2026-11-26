@@ -100,6 +100,8 @@ In the repo's **Actions** tab the run has two jobs:
 - `Nyx.dmg`, a copy under a fixed name, so
   `https://github.com/aristocrat71/nyx-app/releases/latest/download/Nyx.dmg` (the
   site's download button) always serves the newest one.
+- `Nyx-update.dmg`, the same file again, which only the in-app updater downloads, so
+  updates are counted apart from new installs.
 - A `<file>.sha256` beside each installer. `install.sh` refuses to install without a
   match.
 - A build provenance attestation per installer, which ties the file to this repo and
@@ -125,6 +127,17 @@ platform: [macos-latest, ubuntu-22.04, windows-latest]
 
 Everything else in the workflow already handles them. Then fill in the site's
 Windows and Linux tabs, which say "Coming soon".
+
+## Download stats
+
+```bash
+./scripts/release-stats.sh
+```
+
+Prints new installs per OS and updates for every release, from GitHub's download
+counts. Nothing is sent from users' machines: an update is a download of
+`Nyx-update.dmg`, a new install is a download of any other installer. The counts are
+downloads, not people.
 
 ## Test builds
 
