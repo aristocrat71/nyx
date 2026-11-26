@@ -106,7 +106,7 @@
   <header>
     <div class="tile"><img class="owl" src="owl.png" alt=""></div>
     <h1>Nyx</h1>
-    <p class="muted small latest" hidden><a></a> · <span></span></p>
+    <p class="muted small latest" hidden><a></a></p>
     <p class="lede">Share your screen, not everything on it.</p>
     <a class="get" href="#install">Install Now</a>
   </header>
@@ -230,7 +230,6 @@
       const latest = document.querySelector(".latest");
       latest.querySelector("a").textContent = rel.tag_name.replace("nyx-", "");
       latest.querySelector("a").href = rel.html_url;
-      latest.querySelector("span").textContent = new Date(rel.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
       latest.hidden = false;
     })
     .catch(() => {});
