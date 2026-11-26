@@ -1,6 +1,6 @@
 [package]
 name = "nyx"
-version = "0.1.4"
+version = "0.1.5"
 description = "Share your screen, not everything on it."
 authors = ["Unravel"]
 edition = "2024"
