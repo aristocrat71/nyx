@@ -2,14 +2,6 @@
 
 All notable changes to Nyx are recorded here.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
-Nyx uses [semantic versioning](https://semver.org/).
-
-**This file is published.** The release workflow extracts the section matching
-the tag being built and uses it as the GitHub release body, so it is what anyone
-downloading Nyx reads. A tag with no matching section here fails the release
-before anything is built. Write the entry as you merge, not at tag time.
-
 ## [Unreleased]
 
 ### Added
