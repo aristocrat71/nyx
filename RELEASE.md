@@ -47,7 +47,7 @@ own.
 Each PR adds its user-facing changes under `## [Unreleased]` in `CHANGELOG.md`. At
 release time that section becomes the GitHub Release body, word for word, so write it
 for people downloading Nyx, not for the commit log. The heading and its date are never
-published, only what sits below it.
+published, only what sits below it. Follow the [changelog format](#changelog-format).
 
 ### 2. Bump the version in a PR
 
@@ -90,6 +90,52 @@ In the repo's **Actions** tab the run has two jobs:
    - `CHANGELOG.md` has no `## [0.1.1]` section.
 2. **release**, which waits until you click **Review deployments › release › Approve
    and deploy**, then builds and publishes.
+
+---
+
+## Changelog format
+
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), held to
+this shape because three things read it: the release workflow (the GitHub Release body),
+the app's "Nyx was updated!" screen (one line per entry), and people.
+
+```markdown
+## [0.2.0] - 2026-12-01
+
+One or two sentences on what this release is about. Optional.
+
+### Added
+
+- **Short headline.** What it does for the user, in a sentence or two. Wrap lines at
+  about 85 characters and indent the continuation two spaces.
+
+### Changed
+
+- **Short headline.** What behaves differently now.
+
+### Removed
+
+- **Short headline.** What is gone, and what to use instead.
+
+### Fixed
+
+- **Short headline.** What was broken, from the user's side.
+```
+
+- **Version heading:** `## [X.Y.Z] - YYYY-MM-DD`, newest at the top. Until release it is
+  `## [Unreleased]`. The release check looks for `## [X.Y.Z]` exactly, so no `v` prefix.
+- **Sections:** only `### Added`, `### Changed`, `### Removed`, `### Fixed`, in that order,
+  each left out when empty. The updated screen marks `Removed` entries with a red −, and
+  every other entry with a green +.
+- **Entries:** each starts `- **Headline.**` on its first line. The headline is all the
+  updated screen shows, so it must stand alone: a few words, under 40 characters,
+  ending in a full stop. Bold elsewhere in an entry is fine; only the leading bold counts.
+- **Order:** most important first, within and across sections. The screen shows at most
+  six headlines, newest version first.
+- **Voice:** what the user sees or does, in plain words. No commit hashes, file names, PR
+  numbers or internal names, and nothing about how it was built.
+- **One entry per change.** A fix for something added in the same release is not an
+  entry; the addition just works.
 
 ---
 
