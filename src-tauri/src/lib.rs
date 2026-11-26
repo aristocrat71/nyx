@@ -127,6 +127,10 @@ pub fn run() {
             if let Err(e) = shortcut.map(|s| app.global_shortcut().register(s)).transpose() {
                 log::error!("hotkey registration failed: {e}");
             }
+            #[cfg(target_os = "macos")]
+            if !cfg!(debug_assertions) {
+                platform::reset_stale_permissions(&app.config().identifier);
+            }
             // Otherwise Nyx starts quietly in the tray: the dashboard opens only when it needs the user.
             let granted = platform::has_screen_permission() && platform::has_accessibility_permission();
             let needs_user = !granted || list.load_failed || list.apps.is_empty();

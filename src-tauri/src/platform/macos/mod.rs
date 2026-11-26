@@ -145,6 +145,16 @@ pub fn notice() -> Option<&'static str> {
     None
 }
 
+/// An entry granted to an older build stays "on" in System Settings but no longer applies to this
+/// one, so a permission this build lacks is cleared, letting the next request list Nyx afresh.
+pub fn reset_stale_permissions(bundle_id: &str) {
+    for (service, granted) in [("ScreenCapture", has_screen_permission()), ("Accessibility", has_accessibility_permission())] {
+        if !granted {
+            let _ = std::process::Command::new("/usr/bin/tccutil").args(["reset", service, bundle_id]).status();
+        }
+    }
+}
+
 pub fn open_screen_settings() {
     // The only way macOS lists Nyx under Screen Recording; it costs one system prompt.
     CGRequestScreenCaptureAccess();
