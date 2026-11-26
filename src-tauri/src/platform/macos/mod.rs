@@ -1,6 +1,6 @@
 use block2::RcBlock;
 use objc2_app_kit::{
-    NSApplicationDidChangeScreenParametersNotification, NSRunningApplication, NSWorkspace,
+    NSApplicationDidChangeScreenParametersNotification, NSRunningApplication, NSWindow, NSWorkspace,
     NSWorkspaceDidActivateApplicationNotification, NSWorkspaceDidTerminateApplicationNotification,
 };
 use objc2_core_graphics::{CGPreflightScreenCaptureAccess, CGRequestScreenCaptureAccess};
@@ -159,6 +159,14 @@ pub fn open_screen_settings() {
     // The only way macOS lists Nyx under Screen Recording; it costs one system prompt.
     CGRequestScreenCaptureAccess();
     open_url("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture");
+}
+
+/// Up front even when macOS declines to activate Nyx, as it may right after relaunching it.
+pub fn bring_to_front(window: &tauri::WebviewWindow) {
+    if let Ok(ptr) = window.ns_window() {
+        let window: &NSWindow = unsafe { &*(ptr as *const NSWindow) };
+        window.orderFrontRegardless();
+    }
 }
 
 pub fn open_url(url: &str) {

@@ -2,6 +2,14 @@
 
 All notable changes to Nyx are recorded here.
 
+## [Unreleased]
+
+### Fixed
+
+- **Dashboard opens in front.** When macOS reopens Nyx, for example after you
+  allow Screen Recording, the dashboard now comes up in front of your other
+  windows instead of behind them.
+
 ## [0.1.3] - 2026-11-26
 
 ### Added

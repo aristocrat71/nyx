@@ -46,6 +46,8 @@ fn show_dashboard(app: &AppHandle) {
     if let Some(dashboard) = app.get_webview_window("dashboard") {
         let _ = dashboard.show();
         let _ = dashboard.set_focus();
+        #[cfg(target_os = "macos")]
+        platform::bring_to_front(&dashboard);
         return;
     }
     // Built on open and destroyed on close, so the webview costs nothing while Nyx sits in the tray.
@@ -58,6 +60,8 @@ fn show_dashboard(app: &AppHandle) {
             platform::exclude_window(&window);
             let _ = window.show();
             let _ = window.set_focus();
+            #[cfg(target_os = "macos")]
+            platform::bring_to_front(&window);
         });
     });
 }
