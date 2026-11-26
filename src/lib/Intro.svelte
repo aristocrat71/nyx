@@ -32,7 +32,7 @@
       <div class="page">
         {#if page === 0}
           <div class="greeting"><span class="muted">Greetings from Team</span><img src="/unravel.png" alt="Unravel" /></div>
-          <div class="tile"><div class="owl"></div></div>
+          <img class="logo" src="/logo.png" alt="" />
           <h1>Welcome to Nyx</h1>
         {:else if page === 1}
           <div class="card">
@@ -97,8 +97,7 @@
 
   .greeting { display: flex; align-items: baseline; gap: 0.5em; font-size: 15px; }
   .greeting img { height: 1.05em; position: relative; top: 0.08em; }
-  .tile { width: 96px; height: 96px; border-radius: 22px; background: #000; display: grid; place-items: center; border: 1px solid var(--border); }
-  .tile .owl { width: 56px; height: 66px; color: #fff; }
+  .logo { height: 96px; }
 
   .card { width: 220px; padding: 12px; display: flex; flex-direction: column; gap: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); }
   .item { display: flex; align-items: center; gap: 8px; height: 16px; }

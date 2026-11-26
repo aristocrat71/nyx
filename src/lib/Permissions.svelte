@@ -9,7 +9,7 @@
 </script>
 
 <div class="perms" data-tauri-drag-region>
-  <div class="tile"><div class="owl"></div></div>
+  <img class="logo" src="/logo.png" alt="" />
   <h1>Two permissions, then you're set.</h1>
   <div class="list">
     {#each rows as row (row.key)}
@@ -36,8 +36,7 @@
 
 <style>
   .perms { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 30px 20px; }
-  .tile { width: 64px; height: 64px; border-radius: 15px; background: #000; display: grid; place-items: center; border: 1px solid var(--border); }
-  .owl { width: 36px; height: 42px; color: #fff; }
+  .logo { height: 64px; }
   h1 { font-size: 14px; font-weight: 500; }
   .list { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
   .row { display: flex; align-items: center; gap: 12px; padding: 14px; }

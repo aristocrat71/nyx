@@ -73,7 +73,7 @@
 {:else if snap}
   <div class="top" data-tauri-drag-region></div>
   <header data-tauri-drag-region>
-    <div class="tile"><div class="owl"></div></div>
+    <img class="logo" src="/logo.png" alt="" />
     <div class="title" data-tauri-drag-region>
       <div class="name">Nyx</div>
       <div class="muted small">Screen-share privacy</div>
@@ -159,8 +159,7 @@
   :global(body) { display: flex; flex-direction: column; }
   .top { height: 30px; flex: none; }
   header { display: flex; align-items: center; gap: 12px; padding: 0 16px 18px; }
-  .tile { width: 46px; height: 46px; border-radius: 11px; background: var(--control); border: 1px solid var(--border); display: grid; place-items: center; }
-  .tile .owl { width: 28px; height: 28px; }
+  .logo { height: 46px; }
   .title { flex: 1; display: flex; flex-direction: column; gap: 3px; }
   .name { font-size: 17px; font-weight: 500; }
   .small { font-size: 11px; }
