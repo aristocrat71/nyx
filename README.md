@@ -59,37 +59,7 @@ macOS asks for **Screen Recording** on first launch, and site rules need **Acces
 
 ---
 
-## Build
-
-Needs [Rust](https://rustup.rs) and [Bun](https://bun.sh), plus the [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your OS.
-
-```sh
-bun install
-bun tauri dev        # run with the dashboard hot-reloading
-bun run test         # the Rust test suite
-bun run mac-app      # macOS: build Nyx.app (NYX_UNIVERSAL=1 for both architectures)
-bun tauri build      # Windows or Linux: build that OS's installers on that OS
-```
-
-<details>
-<summary><b>Signing for local development on macOS</b></summary>
-
-<br>
-
-Run `./scripts/make-dev-cert.sh` once to create a self-signed "Nyx Dev" signing identity; `bun run mac-app` picks it up automatically and the Screen Recording grant then survives rebuilds. Without it the bundle is ad-hoc signed and macOS invalidates the grant after every rebuild (fix a stale grant with `tccutil reset ScreenCapture tech.unravel.nyx`).
-
-The certificate is not installed as a trusted root, but it still grants Screen Recording to anything signed with it under `tech.unravel.nyx`, so remove it when you are done developing:
-
-```sh
-./scripts/remove-dev-cert.sh
-```
-
-</details>
-
-<details>
-<summary><b>Releasing</b></summary>
-
-<br>
+## Releasing
 
 1. Write the changes under `## [Unreleased]` in `CHANGELOG.md` as you merge. That section becomes the release notes.
 2. On an up-to-date `main`, run `./scripts/release.sh 0.1.1`. It sets the version in `package.json`, `tauri.conf.json`, `Cargo.toml` and `Cargo.lock`, dates the changelog section, commits and tags `nyx-v0.1.1`.
@@ -98,20 +68,6 @@ The certificate is not installed as a trusted root, but it still grants Screen R
 Only macOS is released for now, to save Actions minutes: add `ubuntu-22.04` and `windows-latest` to the `platform` list in `.github/workflows/release.yml` to ship those too. To try a branch on a real machine without releasing, run the `test-build` workflow by hand; it uploads unsigned installers for all three as run artifacts.
 
 One-time setup: under **Settings › Environments**, create `release`, add yourself as a required reviewer, and allow deployments from tags matching `nyx-v*` (a tag never satisfies "protected branches only").
-
-</details>
-
-<details>
-<summary><b>Layout</b></summary>
-
-<br>
-
-- `src/` — the dashboard, in Svelte.
-- `src-tauri/src/` — the platform-neutral core: site rules (`site.rs`), the protected list (`store.rs`), the engine that decides when to cover (`engine.rs`), the tray and the dashboard's commands.
-- `src-tauri/src/platform/{macos,windows,linux}/` — everything that touches other apps' windows, the same functions on each OS.
-- `site/` — the website: one static page, deploy the folder as is. The app build never touches it.
-
-</details>
 
 ---
 
