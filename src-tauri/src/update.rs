@@ -3,7 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-const RELEASES: &str = "https://github.com/aristocrat71/nyx/releases";
+const RELEASES: &str = "https://github.com/unravel-team/nyx/releases";
 
 fn run(tool: &str, args: &[&str]) -> Option<String> {
     let out = Command::new(tool).args(args).output().ok()?;

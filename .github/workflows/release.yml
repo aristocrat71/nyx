@@ -145,7 +145,7 @@ jobs:
           echo 'EOF' >> "$GITHUB_OUTPUT"
           [ "$n" -gt 0 ] || { echo "::error::no installers found"; exit 1; }
 
-      # Verify a download with: gh attestation verify <file> --repo aristocrat71/nyx
+      # Verify a download with: gh attestation verify <file> --repo unravel-team/nyx
       - uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
           subject-path: ${{ steps.sums.outputs.paths }}
