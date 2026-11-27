@@ -3,7 +3,7 @@
 # Updates are the updater's own Nyx-update.dmg; every other installer is a new install.
 set -euo pipefail
 
-REPO="${1:-aristocrat71/nyx-app}"
+REPO="${1:-aristocrat71/nyx}"
 for bin in gh jq column; do
   command -v "$bin" >/dev/null || { echo "release-stats: needs $bin" >&2; exit 1; }
 done

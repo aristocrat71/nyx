@@ -162,9 +162,9 @@
     <div class="tabs"><button data-os="mac">macOS</button><button data-os="win">Windows</button><button data-os="linux">Linux</button></div>
     <div data-panel="mac">
       <p>CLI method: Paste this command on your terminal</p>
-      <div class="cmd"><code>curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx-app/main/install.sh | bash</code><button>copy</button></div>
+      <div class="cmd"><code>curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx/main/install.sh | bash</code><button>copy</button></div>
       <p>DMG method: Grab the dmg below and drag Nyx into Applications.</p>
-      <a class="get" href="https://github.com/aristocrat71/nyx-app/releases/latest/download/Nyx.dmg">Download for Mac</a>
+      <a class="get" href="https://github.com/aristocrat71/nyx/releases/latest/download/Nyx.dmg">Download for Mac</a>
       <p>Please note that this will trigger the Mac's Gatekeeper which stops the owl from running on your machine</p>
       <div class="door">
         <div class="win alert"><b>“Nyx” Not Opened</b><p class="muted">Apple could not verify “Nyx” is free of malware.</p><span>Done</span></div>
@@ -223,7 +223,7 @@
   };
   addEventListener("scroll", () => requestAnimationFrame(mark), { passive: true });
   mark();
-  fetch("https://api.github.com/repos/aristocrat71/nyx-app/releases/latest")
+  fetch("https://api.github.com/repos/aristocrat71/nyx/releases/latest")
     .then((r) => (r.ok ? r.json() : Promise.reject()))
     .then((rel) => {
       const latest = document.querySelector(".latest");

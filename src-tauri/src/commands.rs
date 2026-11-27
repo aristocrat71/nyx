@@ -124,7 +124,7 @@ pub fn open_link(target: String) {
         "screen" => platform::open_screen_settings(),
         "accessibility" => platform::open_accessibility_settings(),
         "unravel" => platform::open_url("https://unravel.tech"),
-        "changelog" => platform::open_url(concat!("https://github.com/aristocrat71/nyx-app/releases/tag/nyx-v", env!("CARGO_PKG_VERSION"))),
+        "changelog" => platform::open_url(concat!("https://github.com/aristocrat71/nyx/releases/tag/nyx-v", env!("CARGO_PKG_VERSION"))),
         _ => {}
     }
 }

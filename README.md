@@ -40,10 +40,10 @@ On Linux you see the cover too, so protected apps are unusable while they are in
 macOS, in one line. It verifies the download's checksum and skips the Gatekeeper prompt:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx-app/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx/main/install.sh | bash
 ```
 
-Or download [Nyx.dmg](https://github.com/aristocrat71/nyx-app/releases/latest/download/Nyx.dmg). Nyx is not notarized yet, so the first launch is blocked: click **Done**, then **System Settings › Privacy & Security › Open Anyway**. Windows and Linux builds are not released yet.
+Or download [Nyx.dmg](https://github.com/aristocrat71/nyx/releases/latest/download/Nyx.dmg). Nyx is not notarized yet, so the first launch is blocked: click **Done**, then **System Settings › Privacy & Security › Open Anyway**. Windows and Linux builds are not released yet.
 
 ---
 
