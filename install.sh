@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Installs Nyx from GitHub Releases, refusing any download whose published SHA-256 does not match.
-#   curl -fsSL https://raw.githubusercontent.com/aristocrat71/nyx/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/unravel-team/nyx/main/install.sh | bash
 # NYX_VERSION=nyx-vX.Y.Z pins a release; the latest is used otherwise.
 set -euo pipefail
 
-base="https://github.com/aristocrat71/nyx/releases"
-api="https://api.github.com/repos/aristocrat71/nyx/releases"
+base="https://github.com/unravel-team/nyx/releases"
+api="https://api.github.com/repos/unravel-team/nyx/releases"
 if [ -n "${NYX_VERSION:-}" ]; then base="$base/download/$NYX_VERSION" api="$api/tags/$NYX_VERSION"; else base="$base/latest/download" api="$api/latest"; fi
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then

@@ -21,9 +21,9 @@ approval. Under **Settings › Environments › release**:
 Check it from the terminal:
 
 ```bash
-gh api repos/aristocrat71/nyx/environments/release --jq '.deployment_branch_policy'
+gh api repos/unravel-team/nyx/environments/release --jq '.deployment_branch_policy'
 # want: {"custom_branch_policies":true,"protected_branches":false}
-gh api repos/aristocrat71/nyx/environments/release/deployment-branch-policies \
+gh api repos/unravel-team/nyx/environments/release/deployment-branch-policies \
   --jq '.branch_policies[] | "\(.type) \(.name)"'
 # want: tag nyx-v*
 ```
@@ -144,7 +144,7 @@ One or two sentences on what this release is about. Optional.
 - The installers, built by `tauri-action`. Today that is the universal macOS
   `Nyx_<version>_universal.dmg`.
 - `Nyx.dmg`, a copy under a fixed name, so
-  `https://github.com/aristocrat71/nyx/releases/latest/download/Nyx.dmg` (the
+  `https://github.com/unravel-team/nyx/releases/latest/download/Nyx.dmg` (the
   site's download button) always serves the newest one.
 - `Nyx-update.dmg`, the same file again, which only the in-app updater downloads, so
   updates are counted apart from new installs.
@@ -154,7 +154,7 @@ One or two sentences on what this release is about. Optional.
   workflow run:
 
   ```bash
-  gh attestation verify Nyx.dmg --repo aristocrat71/nyx
+  gh attestation verify Nyx.dmg --repo unravel-team/nyx
   ```
 
 The install command fetches `install.sh` from `main`, so a change to the script
