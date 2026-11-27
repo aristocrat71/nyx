@@ -2,6 +2,13 @@
 
 All notable changes to Nyx are recorded here.
 
+## [0.1.7] - 2026-11-27
+
+### Changed
+
+- **Nyx has a new home.** Updates, the changelog and downloads now come from
+  github.com/unravel-team/nyx, and the website is nyx.unravel.tech.
+
 ## [0.1.6] - 2026-11-26
 
 ### Changed
